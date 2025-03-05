@@ -42,7 +42,7 @@ An AI-powered solution designed to streamline real estate communication, lead ma
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd real-estate-ai-assistant
+   cd OmniSpeak
    ```
 
 2. **Install dependencies:**
