@@ -1,361 +1,425 @@
+// // pages/translate.tsx
+// "use client";
+
+// import { useState } from "react";
+
+// export default function TranslatePage() {
+//   // Common language states
+//   const [sourceLang, setSourceLang] = useState("en");
+//   const [targetLang, setTargetLang] = useState("hi");
+
+//   // Text translation state (storing full response)
+//   const [textTranslation, setTextTranslation] = useState<any>(null);
+//   const [isTranslatingText, setIsTranslatingText] = useState(false);
+
+//   // Voice translation state (storing full response)
+//   const [voiceTranslation, setVoiceTranslation] = useState<any>(null);
+//   const [isTranslatingVoice, setIsTranslatingVoice] = useState(false);
+//   const [voiceFile, setVoiceFile] = useState<File | null>(null);
+
+//   // File translation state (storing full response)
+//   const [fileTranslation, setFileTranslation] = useState<any>(null);
+//   const [isTranslatingFile, setIsTranslatingFile] = useState(false);
+//   const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+//   // Languages array
+//   const languages = [
+//     { code: "en", name: "English" },
+//     { code: "hi", name: "Hindi" },
+//     { code: "es", name: "Spanish" },
+//     { code: "fr", name: "French" }
+//   ];
+
+//   // Handler for text translation
+//   const handleTranslateText = async () => {
+//     if (!textTranslation && !sourceLang && !targetLang) return;
+//     setIsTranslatingText(true);
+//     try {
+//       const res = await fetch("/api/translate", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           text: (document.getElementById("sourceText") as HTMLTextAreaElement).value,
+//           sourceLang,
+//           targetLang,
+//         }),
+//       });
+//       const data = await res.json();
+//       setTextTranslation(data);
+//     } catch (error) {
+//       console.error("Text translation error:", error);
+//     }
+//     setIsTranslatingText(false);
+//   };
+
+//   // Handler for voice translation
+//   const handleTranslateVoice = async () => {
+//     if (!voiceFile) return;
+//     setIsTranslatingVoice(true);
+//     try {
+//       const formData = new FormData();
+//       formData.append("file", voiceFile);
+//       formData.append("sourceLang", sourceLang);
+//       formData.append("targetLang", targetLang);
+//       const res = await fetch("/api/translateVoice", {
+//         method: "POST",
+//         body: formData,
+//       });
+//       const data = await res.json();
+//       setVoiceTranslation(data);
+//     } catch (error) {
+//       console.error("Voice translation error:", error);
+//     }
+//     setIsTranslatingVoice(false);
+//   };
+
+//   // Handler for file translation
+//   const handleTranslateFile = async () => {
+//     if (!uploadFile) return;
+//     setIsTranslatingFile(true);
+//     try {
+//       const formData = new FormData();
+//       formData.append("file", uploadFile);
+//       formData.append("sourceLang", sourceLang);
+//       formData.append("targetLang", targetLang);
+//       const res = await fetch("/api/translateFile", {
+//         method: "POST",
+//         body: formData,
+//       });
+//       const data = await res.json();
+//       setFileTranslation(data);
+//     } catch (error) {
+//       console.error("File translation error:", error);
+//     }
+//     setIsTranslatingFile(false);
+//   };
+
+//   return (
+//     <div style={{ padding: "1rem" }}>
+//       <h1>MultiLingual Translation</h1>
+
+//       {/* Language selection */}
+//       <div>
+//         <label>
+//           Source Language:
+//           <select value={sourceLang} onChange={(e) => setSourceLang(e.target.value)}>
+//             {languages.map((lang) => (
+//               <option key={lang.code} value={lang.code}>
+//                 {lang.name}
+//               </option>
+//             ))}
+//           </select>
+//         </label>
+//         &nbsp;&nbsp;
+//         <label>
+//           Target Language:
+//           <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
+//             {languages.map((lang) => (
+//               <option key={lang.code} value={lang.code}>
+//                 {lang.name}
+//               </option>
+//             ))}
+//           </select>
+//         </label>
+//       </div>
+
+//       <hr />
+
+//       {/* Text Translation */}
+//       <div>
+//         <h2>Text Translation</h2>
+//         <textarea
+//           id="sourceText"
+//           placeholder="Enter text to translate..."
+//           rows={5}
+//           style={{ width: "100%" }}
+//         />
+//         <br />
+//         <button onClick={handleTranslateText} disabled={isTranslatingText}>
+//           {isTranslatingText ? "Translating..." : "Translate Text"}
+//         </button>
+//         {textTranslation && (
+//           <div>
+//             <h3>Main Translation:</h3>
+//             <p>{textTranslation.translatedText}</p>
+//             {textTranslation.alternatives && (
+//               <div>
+//                 <h4>Alternatives:</h4>
+//                 <ul>
+//                   {textTranslation.alternatives.map((alt: string, index: number) => (
+//                     <li key={index}>{alt}</li>
+//                   ))}
+//                 </ul>
+//               </div>
+//             )}
+//           </div>
+//         )}
+//       </div>
+
+//       <hr />
+
+//       {/* Voice Translation */}
+//       <div>
+//         <h2>Voice Translation (Simulated)</h2>
+//         <input type="file" accept="audio/*" onChange={(e) => e.target.files && setVoiceFile(e.target.files[0])} />
+//         <br />
+//         <button onClick={handleTranslateVoice} disabled={isTranslatingVoice || !voiceFile}>
+//           {isTranslatingVoice ? "Translating..." : "Translate Voice"}
+//         </button>
+//         {voiceTranslation && (
+//           <div>
+//             <h3>Main Translation:</h3>
+//             <p>{voiceTranslation.translatedText}</p>
+//             {voiceTranslation.alternatives && (
+//               <div>
+//                 <h4>Alternatives:</h4>
+//                 <ul>
+//                   {voiceTranslation.alternatives.map((alt: string, index: number) => (
+//                     <li key={index}>{alt}</li>
+//                   ))}
+//                 </ul>
+//               </div>
+//             )}
+//           </div>
+//         )}
+//       </div>
+
+//       <hr />
+
+//       {/* File Translation */}
+//       <div>
+//         <h2>File Translation (Text Files)</h2>
+//         <input type="file" accept=".txt" onChange={(e) => e.target.files && setUploadFile(e.target.files[0])} />
+//         <br />
+//         <button onClick={handleTranslateFile} disabled={isTranslatingFile || !uploadFile}>
+//           {isTranslatingFile ? "Translating..." : "Translate File"}
+//         </button>
+//         {fileTranslation && (
+//           <div>
+//             <h3>Main Translation:</h3>
+//             <p>{fileTranslation.translatedText}</p>
+//             {fileTranslation.alternatives && (
+//               <div>
+//                 <h4>Alternatives:</h4>
+//                 <ul>
+//                   {fileTranslation.alternatives.map((alt: string, index: number) => (
+//                     <li key={index}>{alt}</li>
+//                   ))}
+//                 </ul>
+//               </div>
+//             )}
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRightLeft, Mic, Play, Upload } from "lucide-react";
-
-const languages = [
-  { code: "en", name: "English" },
-  { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "de", name: "German" },
-  { code: "it", name: "Italian" },
-  { code: "pt", name: "Portuguese" },
-  { code: "zh", name: "Chinese" },
-  { code: "ja", name: "Japanese" },
-  { code: "ko", name: "Korean" },
-  { code: "ar", name: "Arabic" },
-  { code: "ru", name: "Russian" },
-];
 
 export default function TranslatePage() {
-  const [sourceText, setSourceText] = useState("");
-  const [translatedText, setTranslatedText] = useState("");
+  // Common language states
   const [sourceLang, setSourceLang] = useState("en");
-  const [targetLang, setTargetLang] = useState("es");
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [targetLang, setTargetLang] = useState("hi");
 
-  const handleTranslate = () => {
-    if (!sourceText.trim()) return;
-    
-    setIsTranslating(true);
-    
-    // Simulate translation delay
+  // Text translation state (storing full response)
+  const [textTranslation, setTextTranslation] = useState<any>(null);
+  const [isTranslatingText, setIsTranslatingText] = useState(false);
+
+  // Voice translation state (storing full response)
+  const [voiceTranslation, setVoiceTranslation] = useState<any>(null);
+  const [isTranslatingVoice, setIsTranslatingVoice] = useState(false);
+  const [voiceFile, setVoiceFile] = useState<File | null>(null);
+
+  // File translation state (storing full response)
+  const [fileTranslation, setFileTranslation] = useState<any>(null);
+  const [isTranslatingFile, setIsTranslatingFile] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+  // Languages array
+  const languages = [
+    { code: "en", name: "English" },
+    { code: "hi", name: "Hindi" },
+    { code: "mr", name: "Marathi" },
+  ];
+
+  // Handler for text translation remains unchanged
+  const handleTranslateText = async () => {
+    if (!textTranslation && !sourceLang && !targetLang) return;
+    setIsTranslatingText(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: (document.getElementById("sourceText") as HTMLTextAreaElement)
+            .value,
+          sourceLang,
+          targetLang,
+        }),
+      });
+      const data = await res.json();
+      setTextTranslation(data);
+    } catch (error) {
+      console.error("Text translation error:", error);
+    }
+    setIsTranslatingText(false);
+  };
+
+  const handleTranslateVoice = async () => {
+    if (!voiceFile) return;
+    setIsTranslatingVoice(true);
     setTimeout(() => {
-      // In a real app, this would call the Hugging Face API
-      setTranslatedText(mockTranslate(sourceText, sourceLang, targetLang));
-      setIsTranslating(false);
-    }, 1000);
+      const defaultTranslation = {
+        translatedText:
+          "हिंदी: तुम से मिल के, ऐसा लगा तुम से मिलके\nअरमाँ हुए पूरे दिल के\nतुम से मिल के, ऐसा लगा तुम से मिलके\nअरमाँ हुए पूरे दिल के, ऐ मेरी जान-ए-वफ़ा\nतेरी-मेरी, मेरी-तेरी एक जान है\nसाथ तेरे रहेंगे सदा, तुम से ना होंगे जुदा\nतुम से मिलके, ऐसा लगा तुम से मिलके\nअरमाँ हुए पूरे दिल के\nमेरे सनम, तेरी क़सम, छोड़ेंगे अब ना ये हाथ\nये ज़िंदगी गुज़रेगी अब, हमदम, तुम्हारे ही साथ\nअपना ये वादा रहा, तुम से ना होंगे जुदा\nतुम से मिलके, ऐसा लगा तुम से मिलके\nअरमाँ हुए पूरे दिल के, ऐ मेरी जान- ए - वफ़ा\nतेरी - मेरी, मेरी - तेरी एक जान है\nसाथ तेरे रहेंगे सदा, तुम से ना होंगे जुदा\nतुम से मिलके, ऐसा लगा तुम से मिलके\nअरमाँ हुए पूरे दिल के\nमैंने किया है रात - दिन बस तेरा ही इंतज़ार\nतेरे बिना आता नहीं एक पल मुझे अब क़रार\nहमदम मेरा मिल गया, हम - तुम ना होंगे जुदा\nहमदम मेरा मिल गया, अब हम ना होंगे जुदा\nतुम से मिलके...\nतुम से मिल के, ऐसा लगा तुम से मिलके\nअरमाँ हुए पूरे दिल के, ऐ मेरी जान - ए - वफ़ा\nतेरी - मेरी, मेरी - तेरी एक जान है\nसाथ तेरे रहेंगे सदा, तुम से ना होंगे जुदा",
+        alternatives: ["हिंदी: तुला भेटल्यावर मला असेच वाटले.\nसंपूर्ण मनाच्या इच्छा पूर्ण होतात\nतुला भेटल्यावर मला असेच वाटले.\nमाझ्या मनाच्या इच्छा पूर्ण झाल्या आहेत, अरे माझ्या निष्ठावंत प्रेमा\nतुझे आणि माझे, माझे आणि तुझे एकच जीवन आहे.\nमी नेहमीच तुझ्यासोबत असेन, मी कधीही तुझ्यापासून वेगळे होणार नाही.\nतुला भेटल्यावर मला असेच वाटले.\nसंपूर्ण मनाच्या इच्छा पूर्ण होतात\nमाझ्या प्रिये, मी तुला शपथ देतो, मी आता हा हात सोडणार नाही.\nहे आयुष्य आता घालवेल, माझ्या प्रिये, फक्त तुझ्यासोबत.\nहे माझे वचन आहे, मी कधीही तुमच्यापासून वेगळे होणार नाही.\nतुला भेटल्यावर मला असेच वाटले.\nमाझ्या मनाच्या इच्छा पूर्ण झाल्या आहेत, अरे माझ्या निष्ठावंत प्रेमा\nतुझे आणि माझे, माझे आणि तुझे एकच जीवन आहे.\nमी नेहमीच तुझ्यासोबत असेन, मी कधीही तुझ्यापासून वेगळे होणार नाही.\nतुला भेटल्यावर मला असेच वाटले.\nसंपूर्ण मनाच्या इच्छा पूर्ण होतात\nमी दिवसरात्र तुझी वाट पाहत आहे.\nमी आता तुझ्याशिवाय एक क्षणही घालवू शकत नाही.\nमला माझा प्रियकर सापडला आहे, आपण कधीही वेगळे होणार नाही.\nमला माझा प्रियकर सापडला आहे, आता आपण वेगळे राहणार नाही.\nतुला भेटून\nतुला भेटल्यावर मला असेच वाटले.\nमाझ्या मनाच्या इच्छा पूर्ण झाल्या आहेत, अरे माझ्या निष्ठावंत प्रेमा\nतुझे आणि माझे, माझे आणि तुझे एकच जीवन आहे.\nमी नेहमीच तुझ्यासोबत असेन, मी कधीही तुझ्यापासून वेगळे होणार नाही."],
+      };
+  setVoiceTranslation(defaultTranslation);
+  setIsTranslatingVoice(false);
+}, 20000);
   };
 
-  const handleSwapLanguages = () => {
-    const temp = sourceLang;
-    setSourceLang(targetLang);
-    setTargetLang(temp);
-    
-    // Also swap the text if there's translated content
-    if (translatedText) {
-      setSourceText(translatedText);
-      setTranslatedText("");
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAudioFile(e.target.files[0]);
-    }
-  };
-
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    // In a real app, this would start/stop recording audio
-  };
-
-  return (
-    <div className="space-y-6">
-      <Tabs defaultValue="text" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="text">Text Translation</TabsTrigger>
-          <TabsTrigger value="voice">Voice Translation</TabsTrigger>
-          <TabsTrigger value="file">Audio File Translation</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="text" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Text Translation</CardTitle>
-              <CardDescription>
-                Translate text between multiple languages
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <Select value={sourceLang} onValueChange={setSourceLang}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Source Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button variant="outline" size="icon" onClick={handleSwapLanguages}>
-                  <ArrowRightLeft className="h-4 w-4" />
-                </Button>
-                
-                <Select value={targetLang} onValueChange={setTargetLang}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Target Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Source Text</label>
-                  <Textarea
-                    placeholder="Enter text to translate..."
-                    className="min-h-[200px]"
-                    value={sourceText}
-                    onChange={(e) => setSourceText(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Translated Text</label>
-                  <Textarea
-                    placeholder="Translation will appear here..."
-                    className="min-h-[200px]"
-                    value={translatedText}
-                    readOnly
-                  />
-                </div>
-              </div>
-              
-              <Button 
-                onClick={handleTranslate} 
-                disabled={!sourceText.trim() || isTranslating}
-                className="w-full"
-              >
-                {isTranslating ? "Translating..." : "Translate"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="voice" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Voice Translation</CardTitle>
-              <CardDescription>
-                Record your voice and translate it to another language
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <Select value={sourceLang} onValueChange={setSourceLang}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Source Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-                
-                <Select value={targetLang} onValueChange={setTargetLang}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Target Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex flex-col items-center justify-center py-10 space-y-6">
-                <div className={`w-32 h-32 rounded-full flex items-center justify-center ${isRecording ? "bg-red-100 dark:bg-red-900/20 animate-pulse" : "bg-muted"}`}>
-                  <Mic className={`h-12 w-12 ${isRecording ? "text-red-500" : ""}`} />
-                </div>
-                
-                <div className="text-center">
-                  <h3 className="text-xl font-medium mb-2">
-                    {isRecording ? "Recording..." : "Press to start recording"}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {isRecording
-                      ? "Speak clearly and I'll translate your voice"
-                      : "Click the button below to start recording your voice"}
-                  </p>
-                </div>
-                
-                <div className="flex space-x-4">
-                  <Button 
-                    variant={isRecording ? "destructive" : "default"}
-                    onClick={toggleRecording}
-                  >
-                    {isRecording ? "Stop Recording" : "Start Recording"}
-                  </Button>
-                  
-                  <Button variant="outline" disabled={!isRecording}>
-                    Translate
-                  </Button>
-                </div>
-              </div>
-              
-              {translatedText && (
-                <div className="mt-6 p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2">Translation Result:</h4>
-                  <p>{translatedText}</p>
-                  <div className="mt-4 flex justify-end">
-                    <Button variant="outline" size="sm">
-                      <Play className="h-4 w-4 mr-2" />
-                      Play Translation
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="file" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Audio File Translation</CardTitle>
-              <CardDescription>
-                Upload an audio file and translate it to another language
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <Select value={sourceLang} onValueChange={setSourceLang}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Source Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-                
-                <Select value={targetLang} onValueChange={setTargetLang}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Target Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="border-2 border-dashed rounded-lg p-10 text-center">
-                <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Upload Audio File</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Drag and drop an audio file or click to browse
-                </p>
-                <input
-                  type="file"
-                  id="audio-file"
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <label htmlFor="audio-file">
-                  <Button variant="outline" className="mx-auto">
-                    Select File
-                  </Button>
-                </label>
-                {audioFile && (
-                  <p className="mt-4 text-sm">
-                    Selected file: {audioFile.name}
-                  </p>
-                )}
-              </div>
-              
-              <Button 
-                disabled={!audioFile} 
-                className="w-full"
-              >
-                Translate Audio
-              </Button>
-              
-              {translatedText && (
-                <div className="mt-6 p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2">Translation Result:</h4>
-                  <p>{translatedText}</p>
-                  <div className="mt-4 flex justify-end">
-                    <Button variant="outline" size="sm">
-                      <Play className="h-4 w-4 mr-2" />
-                      Play Translation
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function mockTranslate(text: string, sourceLang: string, targetLang: string): string {
-  // This is a simple mock translation function
-  // In a real app, this would call the Hugging Face API
-  
-  const mockTranslations: Record<string, Record<string, string>> = {
-    en: {
-      es: "Este es un texto traducido al español.",
-      fr: "Voici un texte traduit en français.",
-      de: "Dies ist ein ins Deutsche übersetzter Text.",
-    },
-    es: {
-      en: "This is text translated to English.",
-      fr: "Voici un texte traduit en français.",
-      de: "Dies ist ein ins Deutsche übersetzter Text.",
-    },
-    fr: {
-      en: "This is text translated to English.",
-      es: "Este es un texto traducido al español.",
-      de: "Dies ist ein ins Deutsche übersetzter Text.",
-    },
-    de: {
-      en: "This is text translated to English.",
-      es: "Este es un texto traducido al español.",
-      fr: "Voici un texte traduit en français.",
-    },
-  };
-  
-  if (mockTranslations[sourceLang]?.[targetLang]) {
-    return mockTranslations[sourceLang][targetLang];
+const handleTranslateFile = async () => {
+  if (!uploadFile) return;
+  setIsTranslatingFile(true);
+  try {
+    const formData = new FormData();
+    formData.append("file", uploadFile);
+    formData.append("sourceLang", sourceLang);
+    formData.append("targetLang", targetLang);
+    const res = await fetch("/api/translateFile", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    setFileTranslation(data);
+  } catch (error) {
+    console.error("File translation error:", error);
   }
-  
-  return `[Translation from ${sourceLang} to ${targetLang}]: ${text}`;
+  setIsTranslatingFile(false);
+};
+
+return (
+  <div style={{ padding: "1rem" }}>
+    <h1>MultiLingual Translation</h1>
+
+    {/* Language selection */}
+    <div>
+      <label>
+        Source Language:
+        <select value={sourceLang} onChange={(e) => setSourceLang(e.target.value)}>
+          {languages.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      &nbsp;&nbsp;
+      <label>
+        Target Language:
+        <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
+          {languages.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+
+    <hr />
+
+    {/* Text Translation */}
+    <div>
+      <h2>Text Translation</h2>
+      <textarea
+        id="sourceText"
+        placeholder="Enter text to translate..."
+        rows={5}
+        style={{ width: "100%" }}
+      />
+      <br />
+      <button onClick={handleTranslateText} disabled={isTranslatingText}>
+        {isTranslatingText ? "Translating..." : "Translate Text"}
+      </button>
+      {textTranslation && (
+        <div>
+          <h3>Main Translation:</h3>
+          <p>{textTranslation.translatedText}</p>
+          {textTranslation.alternatives && (
+            <div>
+              <h4>Alternatives:</h4>
+              <ul>
+                {textTranslation.alternatives.map((alt: string, index: number) => (
+                  <li key={index}>{alt}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
+    <hr />
+
+    {/* Voice Translation */}
+    <div>
+      <h2>Voice Translation (Simulated)</h2>
+      <input type="file" accept="audio/*" onChange={(e) => e.target.files && setVoiceFile(e.target.files[0])} />
+      <br />
+      <button onClick={handleTranslateVoice} disabled={isTranslatingVoice || !voiceFile}>
+        {isTranslatingVoice ? "Translating..." : "Translate Voice"}
+      </button>
+      {voiceTranslation && (
+        <div>
+          <h3>Main Translation:</h3>
+          <p>{voiceTranslation.translatedText}</p>
+          {voiceTranslation.alternatives && (
+            <div>
+              <h4>Alternatives:</h4>
+              <ul>
+                {voiceTranslation.alternatives.map((alt: string, index: number) => (
+                  <li key={index}>{alt}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
+    <hr />
+
+    {/* File Translation */}
+    <div>
+      <h2>File Translation (Text Files)</h2>
+      <input type="file" accept=".txt" onChange={(e) => e.target.files && setUploadFile(e.target.files[0])} />
+      <br />
+      <button onClick={handleTranslateFile} disabled={isTranslatingFile || !uploadFile}>
+        {isTranslatingFile ? "Translating..." : "Translate File"}
+      </button>
+      {fileTranslation && (
+        <div>
+          <h3>Main Translation:</h3>
+          <p>{fileTranslation.translatedText}</p>
+          {fileTranslation.alternatives && (
+            <div>
+              <h4>Alternatives:</h4>
+              <ul>
+                {fileTranslation.alternatives.map((alt: string, index: number) => (
+                  <li key={index}>{alt}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+);
 }
+

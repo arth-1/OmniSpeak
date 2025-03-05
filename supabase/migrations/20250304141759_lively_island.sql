@@ -18,14 +18,13 @@
 
 -- Users table (extends Clerk auth)
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+  id TEXT PRIMARY KEY, -- Changed from UUID to TEXT
   email TEXT UNIQUE NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
-
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can read own data"
@@ -43,8 +42,8 @@ CREATE POLICY "Users can update own data"
 -- Projects table
 CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL, 
   description TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   progress INTEGER DEFAULT 0,

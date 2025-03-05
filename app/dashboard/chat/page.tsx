@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Mic, User, Bot } from "lucide-react";
+import Markdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -23,79 +24,64 @@ export default function ChatPage() {
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
-
     const userMessage: Message = {
       id: Date.now().toString(),
       content: input,
       sender: "user",
       timestamp: new Date(),
     };
-
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
 
     try {
-      const response = await fetch("http://localhost:11434/api/chat", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "deepseek-r1:14b", // Required field
           messages: [
-            { role: 'system', content: 'You are a real estate AI assistant...' },
-            // ...other messages
+            { role: "system", content: "You are a real estate AI assistant..." },
+            { role: "user", content: userMessage.content },
           ],
-          stream: true
+          stream: true,
         }),
       });
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      const decoder = new TextDecoder();
-      let aiResponse = "";
-      const aiMessageId = Date.now().toString();  
-
-if (!reader) throw new Error("No response body");
-
-let fullResponse = "";
-let done = false;
-let buffer = "";
-
-while (!done) {
-  const { value, done: doneReading } = await reader.read();
-  if (doneReading) break;
-  if (value) {
-    buffer += decoder.decode(value, { stream: true });
-    // Assuming JSON objects are newline-delimited:
-    const lines = buffer.split("\n");
-    // Process all complete lines
-    for (let i = 0; i < lines.length - 1; i++) {
-      try {
-        const json = JSON.parse(lines[i]);
-        fullResponse += json.message?.content || "";
-        if (json.done) { // Stop if API signals completion
-          done = true;
-          break;
-        }
-      } catch (err) {
-        console.error("Parsing error:", err);
+      if (!response.ok || !response.body) {
+        throw new Error("No response body from server");
       }
-    }
-    // Keep the incomplete part in the buffer
-    buffer = lines[lines.length - 1];
-  }
-}
-// Optionally flush any remaining data
-fullResponse += decoder.decode();
-console.log("Final response:", fullResponse);
 
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n").filter(Boolean);
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line);
+            if (json.message) {
+              aiContent += json.message;
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last && last.sender === "ai") {
+                  return [...prev.slice(0, -1), { ...last, content: aiContent }];
+                }
+                return [...prev, { id: Date.now().toString(), content: aiContent, sender: "ai", timestamp: new Date() }];
+              });
+            }
+          } catch (error) {
+            console.error("Parsing error:", error);
+          }
+        }
+      }
     } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           id: "error",
-          content:
-            error instanceof Error ? error.message.replace(/</g, "&lt;") : "Request failed",
+          content: error instanceof Error ? error.message : "Request failed",
           sender: "ai",
           timestamp: new Date(),
         },
@@ -110,10 +96,8 @@ console.log("Final response:", fullResponse);
     }
   };
 
-  // Optional: Audio recording implementation
   const handleAudioRecording = async () => {
     setIsRecording((prev) => !prev);
-    // Implement audio recording as needed...
   };
 
   useEffect(() => {
@@ -121,7 +105,7 @@ console.log("Final response:", fullResponse);
   }, [messages]);
 
   function formatTime(date: Date): string {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
   return (
@@ -132,9 +116,7 @@ console.log("Final response:", fullResponse);
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                }`}
+                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div className="flex items-start gap-2 max-w-[80%]">
                   {message.sender === "ai" && (
@@ -145,16 +127,14 @@ console.log("Final response:", fullResponse);
                     </Avatar>
                   )}
                   <div
-                    className={`rounded-lg px-4 py-2 ${
-                      message.sender === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
+                    className={`rounded-lg px-4 py-2 ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
                   >
-                    <p>{message.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {formatTime(message.timestamp)}
-                    </p>
+                    {message.sender === "ai" ? (
+                      <Markdown>{message.content}</Markdown>
+                    ) : (
+                      <p>{message.content}</p>
+                    )}
+                    <p className="text-xs opacity-70 mt-1">{formatTime(message.timestamp)}</p>
                   </div>
                   {message.sender === "user" && (
                     <Avatar className="h-8 w-8">

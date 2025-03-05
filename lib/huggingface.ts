@@ -84,9 +84,9 @@ async function handleOllamaStream(stream: ReadableStream) {
   const decoder = new TextDecoder();
   let buffer = '';
   let responseText = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
+  const { done, value } = await reader.read();
+  while (!done) {
+    
     if (done) break;
     
     buffer += decoder.decode(value, { stream: true });

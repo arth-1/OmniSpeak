@@ -1,14 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import Image from "next/image";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { PlusCircle, Search, Building2, Users, Calendar as CalendarIcon, MoreHorizontal } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, Search, Building2, Users, Calendar, MoreHorizontal } from "lucide-react";
+
+const projectFormSchema = z.object({
+  name: z.string().min(2, "Project name must be at least 2 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  status: z.enum(["active", "pending", "completed"]),
+  progress: z.number().min(0).max(100),
+  clientCount: z.number().min(0),
+  startDate: z.date(),
+  endDate: z.date().optional(),
+  image: z.string().url().optional(),
+});
+
+type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 interface Project {
   id: string;
@@ -17,189 +38,64 @@ interface Project {
   status: "active" | "pending" | "completed";
   progress: number;
   clientCount: number;
-  startDate: Date;
-  endDate?: Date;
+  startDate: string;
+  endDate?: string;
   image?: string;
 }
 
-const mockProjects: Project[] = [
-  {
-    id: "P-1001",
-    name: "Oakridge Residences",
-    description: "Luxury condominium development with 45 units in downtown area",
-    status: "active",
-    progress: 65,
-    clientCount: 12,
-    startDate: new Date(2025, 1, 15),
-    endDate: new Date(2025, 7, 30),
-    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "P-1002",
-    name: "Riverside Estates",
-    description: "Single-family home development with 28 properties along the river",
-    status: "active",
-    progress: 40,
-    clientCount: 8,
-    startDate: new Date(2025, 2, 10),
-    endDate: new Date(2025, 10, 15),
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "P-1003",
-    name: "Sunset Towers",
-    description: "High-rise apartment complex with 120 units and premium amenities",
-    status: "pending",
-    progress: 10,
-    clientCount: 3,
-    startDate: new Date(2025, 4, 1),
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "P-1004",
-    name: "Maple Grove Community",
-    description: "Mixed-use development with residential and commercial spaces",
-    status: "completed",
-    progress: 100,
-    clientCount: 32,
-    startDate: new Date(2024, 8, 5),
-    endDate: new Date(2025, 2, 28),
-    image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "P-1005",
-    name: "Parkview Heights",
-    description: "Townhouse development with 36 units adjacent to city park",
-    status: "active",
-    progress: 75,
-    clientCount: 18,
-    startDate: new Date(2024, 11, 10),
-    endDate: new Date(2025, 5, 15),
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  },
-  {
-    id: "P-1006",
-    name: "Harbor View Condos",
-    description: "Waterfront condominiums with premium finishes and amenities",
-    status: "pending",
-    progress: 5,
-    clientCount: 2,
-    startDate: new Date(2025, 5, 1),
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-  },
-];
+const useLocalStorage = (key: string, initialValue: Project[]) => {
+  const [storedValue, setStoredValue] = useState<Project[]>(() => {
+    if (typeof window === "undefined") return initialValue;
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
 
-export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  const filteredProjects = projects.filter((project) => 
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const activeProjects = filteredProjects.filter(p => p.status === "active");
-  const pendingProjects = filteredProjects.filter(p => p.status === "pending");
-  const completedProjects = filteredProjects.filter(p => p.status === "completed");
+  const setValue = (value: Project[] | ((prev: Project[]) => Project[])) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.error("Local storage error:", error);
+    }
+  };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">
-            Manage your real estate development projects
-          </p>
-        </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search projects..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-      
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">
-            All Projects ({filteredProjects.length})
-          </TabsTrigger>
-          <TabsTrigger value="active">
-            Active ({activeProjects.length})
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending ({pendingProjects.length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed ({completedProjects.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="mt-6">
-          <ProjectGrid projects={filteredProjects} />
-        </TabsContent>
-        
-        <TabsContent value="active" className="mt-6">
-          <ProjectGrid projects={activeProjects} />
-        </TabsContent>
-        
-        <TabsContent value="pending" className="mt-6">
-          <ProjectGrid projects={pendingProjects} />
-        </TabsContent>
-        
-        <TabsContent value="completed" className="mt-6">
-          <ProjectGrid projects={completedProjects} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+  return [storedValue, setValue] as const;
+};
+
+function StatusBadge({ status }: { status: "active" | "pending" | "completed" }) {
+  const statusConfig = {
+    active: { label: "Active", variant: "default" },
+    pending: { label: "Pending", variant: "secondary" },
+    completed: { label: "Completed", variant: "outline" },
+  };
+
+  const config = statusConfig[status];
+
+  return <Badge variant={config.variant as any}>{config.label}</Badge>;
 }
 
-interface ProjectGridProps {
-  projects: Project[];
-}
-
-function ProjectGrid({ projects }: ProjectGridProps) {
-  if (projects.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-muted-foreground">No projects found</p>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
-      ))}
-    </div>
-  );
-}
-
-interface ProjectCardProps {
+function ProjectCard({ project, onEdit, onDelete }: {
   project: Project;
-}
-
-function ProjectCard({ project }: ProjectCardProps) {
+  onEdit: (project: Project) => void;
+  onDelete: (projectId: string) => void;
+}) {
   return (
     <Card className="overflow-hidden">
       <div className="relative h-48">
-        <img
-          src={project.image || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"}
+        <Image
+          src={project.image || "/placeholder-project.jpg"}
           alt={project.name}
           className="w-full h-full object-cover"
+          width={400}
+          height={200}
+          priority
         />
         <div className="absolute top-2 right-2">
           <StatusBadge status={project.status} />
@@ -209,9 +105,21 @@ function ProjectCard({ project }: ProjectCardProps) {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle>{project.name}</CardTitle>
-          <Button variant="ghost" size="icon">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => onEdit(project)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(project.id)}>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <CardDescription className="line-clamp-2">{project.description}</CardDescription>
       </CardHeader>
@@ -228,9 +136,8 @@ function ProjectCard({ project }: ProjectCardProps) {
         <div className="flex justify-between text-sm">
           <div className="flex items-center">
             <Building2 className="mr-1 h-4 w-4 text-muted-foreground" />
-            <span>Project #{project.id}</span>
+            <span>{project.id}</span>
           </div>
-          
           <div className="flex items-center">
             <Users className="mr-1 h-4 w-4 text-muted-foreground" />
             <span>{project.clientCount} Clients</span>
@@ -240,10 +147,10 @@ function ProjectCard({ project }: ProjectCardProps) {
       
       <CardFooter className="pt-0">
         <div className="flex items-center text-sm text-muted-foreground w-full">
-          <Calendar className="mr-1 h-4 w-4" />
+          <CalendarIcon className="mr-1 h-4 w-4" />
           <span>
-            {formatDate(project.startDate)} 
-            {project.endDate && ` - ${formatDate(project.endDate)}`}
+            {format(new Date(project.startDate), 'MMM dd, yyyy')} 
+            {project.endDate && ` - ${format(new Date(project.endDate), 'MMM dd, yyyy')}`}
           </span>
         </div>
       </CardFooter>
@@ -251,26 +158,273 @@ function ProjectCard({ project }: ProjectCardProps) {
   );
 }
 
-function StatusBadge({ status }: { status: Project["status"] }) {
-  const statusConfig = {
-    "active": { label: "Active", variant: "default" },
-    "pending": { label: "Pending", variant: "secondary" },
-    "completed": { label: "Completed", variant: "outline" },
-  };
-  
-  const config = statusConfig[status];
-  
+function ProjectGrid({ projects, onEdit, onDelete }: {
+  projects: Project[];
+  onEdit: (project: Project) => void;
+  onDelete: (projectId: string) => void;
+}) {
+  if (projects.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-muted-foreground">No projects found</p>
+      </div>
+    );
+  }
+
   return (
-    <Badge variant={config.variant as any}>
-      {config.label}
-    </Badge>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {projects.map((project) => (
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
   );
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+export default function ProjectsPage() {
+  const { toast } = useToast();
+  const [projects, setProjects] = useLocalStorage("projects", []);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editProject, setEditProject] = useState<Project | null>(null);
+
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      status: "active",
+      progress: 0,
+      clientCount: 0,
+      startDate: new Date(),
+      endDate: undefined,
+      image: "",
+    }
   });
+
+  useEffect(() => {
+    if (editProject) {
+      form.reset({
+        ...editProject,
+        startDate: new Date(editProject.startDate),
+        endDate: editProject.endDate ? new Date(editProject.endDate) : undefined
+      });
+    } else {
+      form.reset({
+        name: "",
+        description: "",
+        status: "active",
+        progress: 0,
+        clientCount: 0,
+        startDate: new Date(),
+        endDate: undefined,
+        image: "",
+      });
+    }
+  }, [editProject, form]);
+
+  const handleSubmit = (values: ProjectFormValues) => {
+    const projectData: Project = {
+      id: editProject?.id || `P-${Date.now()}`,
+      name: values.name,
+      description: values.description,
+      status: values.status,
+      progress: values.progress,
+      clientCount: values.clientCount,
+      startDate: values.startDate.toISOString(),
+      endDate: values.endDate?.toISOString(),
+      image: values.image,
+    };
+
+    setProjects(prev => 
+      editProject 
+        ? prev.map(p => p.id === editProject.id ? projectData : p)
+        : [...prev, projectData]
+    );
+
+    setOpenDialog(false);
+    setEditProject(null);
+    toast({
+      title: `Project ${editProject ? "Updated" : "Created"}`,
+      description: "Your project details have been saved successfully.",
+    });
+  };
+
+  const handleDelete = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    toast({ title: "Project Deleted", description: "Project removed successfully." });
+  };
+
+  const filteredProjects = projects.filter((project) =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const activeProjects = filteredProjects.filter(p => p.status === "active");
+  const pendingProjects = filteredProjects.filter(p => p.status === "pending");
+  const completedProjects = filteredProjects.filter(p => p.status === "completed");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
+          <p className="text-muted-foreground">
+            Manage your real estate development projects
+          </p>
+        </div>
+
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editProject ? "Edit Project" : "New Project"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label>Project Name</label>
+                  <Input {...form.register("name")} />
+                  {form.formState.errors.name && (
+                    <p className="text-red-500 text-sm">{form.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label>Status</label>
+                  <select
+                    {...form.register("status")}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label>Description</label>
+                <Input {...form.register("description")} />
+                {form.formState.errors.description && (
+                  <p className="text-red-500 text-sm">{form.formState.errors.description.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label>Progress (%)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    {...form.register("progress", { valueAsNumber: true })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label>Number of Clients</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    {...form.register("clientCount", { valueAsNumber: true })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label>Start Date</label>
+                  <Controller
+                    name="startDate"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        className="rounded-md border"
+                      />
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label>End Date</label>
+                  <Controller
+                    name="endDate"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        className="rounded-md border"
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label>Image URL</label>
+                <Input {...form.register("image")} />
+              </div>
+
+              <Button type="submit" className="w-full">
+                {editProject ? "Save Changes" : "Create Project"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search projects..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">All Projects ({filteredProjects.length})</TabsTrigger>
+          <TabsTrigger value="active">Active ({activeProjects.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingProjects.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completedProjects.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-6">
+          <ProjectGrid projects={filteredProjects} onEdit={setEditProject} onDelete={handleDelete} />
+        </TabsContent>
+        
+        <TabsContent value="active" className="mt-6">
+          <ProjectGrid projects={activeProjects} onEdit={setEditProject} onDelete={handleDelete} />
+        </TabsContent>
+        
+        <TabsContent value="pending" className="mt-6">
+          <ProjectGrid projects={pendingProjects} onEdit={setEditProject} onDelete={handleDelete} />
+        </TabsContent>
+        
+        <TabsContent value="completed" className="mt-6">
+          <ProjectGrid projects={completedProjects} onEdit={setEditProject} onDelete={handleDelete} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }
