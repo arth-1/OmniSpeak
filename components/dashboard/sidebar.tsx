@@ -31,7 +31,7 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="space-y-4 py-4">
         <div className="px-4 py-2 flex items-center gap-2">
           <Building2 className="h-6 w-6 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight">Omni Speak</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Verbalytics</h2>
         </div>
         <div className="px-4">
           <div className="flex items-center justify-between">
@@ -110,13 +110,6 @@ export function Sidebar({ className }: SidebarProps) {
               isActive={pathname.startsWith("/dashboard/translate")}
             >
               Translation
-            </NavItem>
-            <NavItem
-              href="/dashboard/summarize"
-              icon={<FileText className="mr-2 h-4 w-4" />}
-              isActive={pathname.startsWith("/dashboard/summarize")}
-            >
-              Summarization
             </NavItem>
           </div>
         </div>
