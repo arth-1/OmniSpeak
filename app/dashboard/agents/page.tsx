@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Bot, Activity, Settings, MessageSquare, TrendingUp, Users, Building2, Mail, Calculator, FileText, BarChart3, AlertTriangle, CheckCircle, Search, MapPin } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Bot, Activity, Settings, MessageSquare, TrendingUp, Users, Building2, Mail, Calculator, FileText, BarChart3, AlertTriangle, CheckCircle, Search, MapPin, Clock } from 'lucide-react';
 import MarketVisualizationDashboard from '@/components/charts/market-visualization-dashboard';
 
 interface Agent {
@@ -177,7 +177,7 @@ const PREDEFINED_TASKS: PredefinedTask[] = [
       { name: 'project', type: 'select', options: ['Sunset Towers', 'Metro Plaza', 'Downtown Heights', 'Riverside Commons'] }
     ]
   },
-  
+
   // Market Analysis Agent Tasks
   {
     id: 'scrape-market-data',
@@ -278,11 +278,34 @@ export default function AgentsPage() {
 
   const fetchAgents = async () => {
     try {
-      const response = await fetch('/api/agents');
-      const data = await response.json();
-      if (data.success) {
-        setAgents(data.agents);
-      }
+      // Mock API call
+      const mockAgents: Agent[] = [
+        {
+          id: 'financial',
+          name: 'Financial Agent',
+          description: 'Analyzes client financials, calculates mortgage eligibility, and generates documents.',
+          isActive: true,
+          lastUsed: new Date().toISOString(),
+          usageCount: 45
+        },
+        {
+          id: 'property-project',
+          name: 'Property Project Agent',
+          description: 'Manages project-specific tasks like demand letters, client matching, and analytics.',
+          isActive: true,
+          lastUsed: new Date(Date.now() - 86400000).toISOString(),
+          usageCount: 68
+        },
+        {
+          id: 'market',
+          name: 'Market Analysis Agent',
+          description: 'Scrapes and analyzes live market data for property valuations and investment insights.',
+          isActive: false,
+          lastUsed: new Date(Date.now() - 2 * 86400000).toISOString(),
+          usageCount: 22
+        }
+      ];
+      setAgents(mockAgents);
     } catch (error) {
       console.error('Failed to fetch agents:', error);
     } finally {
@@ -292,36 +315,44 @@ export default function AgentsPage() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/agents/tasks');
-      const data = await response.json();
-      if (data.success) {
-        setTasks(data.tasks);
-      }
+      // Mock API call
+      const mockTasks: Task[] = [
+        {
+          id: 'task-1',
+          agentId: 'financial',
+          input: 'Mortgage Qualification for client with 100000 annual income',
+          status: 'completed',
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: 'task-2',
+          agentId: 'property-project',
+          input: 'Send demand letters for Metro Plaza project',
+          status: 'processing',
+          createdAt: new Date(Date.now() - 1800000).toISOString(),
+        },
+        {
+          id: 'task-3',
+          agentId: 'market',
+          input: 'Analyze investment opportunity in Austin, TX',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        },
+      ];
+      setTasks(mockTasks);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     }
   };
 
   const toggleAgent = async (agentId: string, isActive: boolean) => {
-    try {
-      const response = await fetch(`/api/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: isActive ? 'activate' : 'deactivate' })
-      });
-
-      if (response.ok) {
-        fetchAgents(); // Refresh agents list
-      }
-    } catch (error) {
-      console.error('Failed to toggle agent:', error);
-    }
+    // Mock API call to toggle agent status
+    setAgents(agents.map(a => a.id === agentId ? { ...a, isActive, lastUsed: new Date().toISOString() } : a));
   };
 
   const executeTask = async () => {
     if (!selectedTask) return;
 
-    // Build task string with user inputs
     let finalTask = selectedTask.task;
     if (selectedTask.requiresInput) {
       for (const input of selectedTask.requiresInput) {
@@ -332,33 +363,31 @@ export default function AgentsPage() {
 
     setIsExecuting(true);
     setShowResult(false);
-    
-    try {
-      const response = await fetch('/api/agents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task: finalTask,
-          context: {
-            sessionId: `session-${Date.now()}`,
-            conversationHistory: [],
-            userId: 'demo-user'
-          },
-          strategy: selectedStrategy
-        })
-      });
 
-      const data = await response.json();
-      if (data.success) {
-        setTaskResult(data.result);
-        setShowResult(true);
-        fetchTasks(); // Refresh task history
-        // Reset form
-        setSelectedTask(null);
-        setTaskInputs({});
-      } else {
-        alert('Task execution failed: ' + (data.error || 'Unknown error'));
-      }
+    try {
+      // Mock API call for task execution
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const mockResult = {
+        success: true,
+        result: {
+          message: `Task "${finalTask}" has been completed by the ${selectedTask.agent} agent. A detailed report has been generated and sent to your email.`,
+          confidence: 0.95,
+          actions: [
+            { type: 'report_generated' },
+            { type: 'emails_sent', data: { totalSent: 12 } }
+          ],
+          nextSteps: [
+            'Review the generated report for key insights.',
+            'Follow up with high-priority clients identified in the report.',
+            'Schedule a meeting with the project team to discuss next steps.'
+          ]
+        }
+      };
+      setTaskResult(mockResult.result);
+      setShowResult(true);
+      fetchTasks();
+      setSelectedTask(null);
+      setTaskInputs({});
     } catch (error) {
       console.error('Failed to execute task:', error);
       alert('Failed to execute task');
@@ -384,7 +413,7 @@ export default function AgentsPage() {
   const isTaskReady = () => {
     if (!selectedTask) return false;
     if (!selectedTask.requiresInput) return true;
-    
+
     return selectedTask.requiresInput.every(input => {
       const value = taskInputs[input.name];
       return value && value.trim() !== '';
@@ -392,42 +421,24 @@ export default function AgentsPage() {
   };
 
   const setupDemandLetterWorkflow = async () => {
-    try {
-      const response = await fetch('/api/agents/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Construction Milestone Demand Letters',
-          trigger: 'construction_milestone',
-          agents: ['property-project'],
-          schedule: 'daily'
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        alert('Automated demand letter workflow setup successfully!');
-      }
-    } catch (error) {
-      console.error('Failed to setup workflow:', error);
-      alert('Failed to setup workflow');
-    }
+    alert('Mock workflow setup triggered!');
   };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      processing: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800'
+      pending: 'bg-yellow-800 text-yellow-200 border-yellow-700',
+      processing: 'bg-blue-800 text-blue-200 border-blue-700',
+      completed: 'bg-green-800 text-green-200 border-green-700',
+      failed: 'bg-red-800 text-red-200 border-red-700'
     };
-    return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
+    return statusColors[status as keyof typeof statusColors] || 'bg-slate-700 text-slate-200 border-slate-600';
   };
 
   const getAgentIcon = (agentId: string) => {
     const icons = {
       'financial': TrendingUp,
       'property-project': Building2,
+      'market': BarChart3,
       'default': Bot
     };
     const IconComponent = icons[agentId as keyof typeof icons] || icons.default;
@@ -436,7 +447,7 @@ export default function AgentsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 bg-slate-950 text-white min-h-screen">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -445,60 +456,54 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">AI Agent Management</h1>
-          <p className="text-muted-foreground">
-            Manage and coordinate your AI agents for real estate automation
-          </p>
-        </div>
-        <Button onClick={setupDemandLetterWorkflow} className="bg-gradient-to-r from-blue-600 to-purple-600">
+    <div className="space-y-8 p-6 bg-slate-950 text-white min-h-screen font-sans">
+      <header className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight text-white">AI Agent Management</h1>
+        <Button onClick={setupDemandLetterWorkflow} className="bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600">
           <Settings className="mr-2 h-4 w-4" />
           Setup Auto Workflows
         </Button>
-      </div>
+      </header>
 
-      <Tabs defaultValue="agents" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="agents">Active Agents</TabsTrigger>
-          <TabsTrigger value="execute">Execute Task</TabsTrigger>
-          <TabsTrigger value="history">Task History</TabsTrigger>
+      <Tabs defaultValue="agents" className="space-y-6">
+        <TabsList className="bg-slate-900 border-slate-800 grid w-full md:w-fit grid-cols-3">
+          <TabsTrigger value="agents" className="data-[state=active]:bg-slate-800 text-white">Active Agents</TabsTrigger>
+          <TabsTrigger value="execute" className="data-[state=active]:bg-slate-800 text-white">Execute Task</TabsTrigger>
+          <TabsTrigger value="history" className="data-[state=active]:bg-slate-800 text-white">Task History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="agents" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {agents.map((agent) => (
-              <Card key={agent.id} className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50" />
-                <CardHeader className="relative">
+              <Card key={agent.id} className="bg-slate-900 border-slate-800 text-white">
+                <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      {getAgentIcon(agent.id)}
-                      <CardTitle className="text-lg">{agent.name}</CardTitle>
+                      <div className="bg-primary/10 p-2 rounded-full text-sky-400">{getAgentIcon(agent.id)}</div>
+                      <CardTitle className="text-lg text-white">{agent.name}</CardTitle>
                     </div>
                     <Switch
                       checked={agent.isActive}
                       onCheckedChange={(checked) => toggleAgent(agent.id, checked)}
                     />
                   </div>
-                  <CardDescription>{agent.description}</CardDescription>
+                  <CardDescription className="text-slate-400">{agent.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="relative">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Status:</span>
-                      <Badge variant={agent.isActive ? "default" : "secondary"}>
+                <CardContent>
+                  <div className="space-y-2 text-sm text-slate-400">
+                    <div className="flex items-center justify-between">
+                      <span>Status:</span>
+                      <Badge className={`text-xs font-semibold ${agent.isActive ? 'bg-green-600/20 text-green-400 border border-green-500/30' : 'bg-slate-700/50 text-slate-400 border border-slate-600/30'}`}>
                         {agent.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Usage Count:</span>
-                      <span className="font-medium">{agent.usageCount}</span>
+                    <div className="flex items-center justify-between">
+                      <span>Usage Count:</span>
+                      <span className="font-medium text-white">{agent.usageCount}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Last Used:</span>
-                      <span className="font-medium">
+                    <div className="flex items-center justify-between">
+                      <span>Last Used:</span>
+                      <span className="font-medium text-white">
                         {new Date(agent.lastUsed).toLocaleDateString()}
                       </span>
                     </div>
@@ -509,25 +514,25 @@ export default function AgentsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="execute" className="space-y-4">
-          <Card>
+        <TabsContent value="execute" className="space-y-6">
+          <Card className="bg-slate-900 border-slate-800 text-white">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <MessageSquare className="mr-2 h-5 w-5" />
+                <MessageSquare className="mr-2 h-5 w-5 text-sky-400" />
                 Execute Agent Task
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-400">
                 Choose from predefined real estate automation tasks
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="strategy">Execution Strategy</Label>
+                <Label htmlFor="strategy" className="text-slate-200">Execution Strategy</Label>
                 <Select value={selectedStrategy} onValueChange={setSelectedStrategy}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                     <SelectValue placeholder="Select strategy" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
                     <SelectItem value="smart-routing">Smart Routing</SelectItem>
                     <SelectItem value="sequential">Sequential Execution</SelectItem>
                     <SelectItem value="parallel">Parallel Execution</SelectItem>
@@ -536,35 +541,35 @@ export default function AgentsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="task">Select Task</Label>
+                <Label htmlFor="task" className="text-slate-200">Select Task</Label>
                 <Select value={selectedTask?.id || ''} onValueChange={handleTaskSelection}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                     <SelectValue placeholder="Choose a predefined task..." />
                   </SelectTrigger>
-                  <SelectContent>
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Financial Analysis</div>
+                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                    <div className="px-2 py-1 text-xs font-semibold text-slate-400">Financial Analysis</div>
                     {PREDEFINED_TASKS.filter(t => t.category === 'Financial Analysis').map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
+                      <SelectItem key={task.id} value={task.id} className="focus:bg-slate-700">
                         <div className="flex items-center space-x-2">
-                          <task.icon className="h-4 w-4" />
+                          <task.icon className="h-4 w-4 text-sky-400" />
                           <span>{task.title}</span>
                         </div>
                       </SelectItem>
                     ))}
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-2">Market Analysis</div>
+                    <div className="px-2 py-1 text-xs font-semibold text-slate-400 mt-2">Market Analysis</div>
                     {PREDEFINED_TASKS.filter(t => t.category === 'Market Analysis').map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
+                      <SelectItem key={task.id} value={task.id} className="focus:bg-slate-700">
                         <div className="flex items-center space-x-2">
-                          <task.icon className="h-4 w-4" />
+                          <task.icon className="h-4 w-4 text-teal-400" />
                           <span>{task.title}</span>
                         </div>
                       </SelectItem>
                     ))}
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-2">Project Management</div>
+                    <div className="px-2 py-1 text-xs font-semibold text-slate-400 mt-2">Project Management</div>
                     {PREDEFINED_TASKS.filter(t => t.category === 'Project Management').map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
+                      <SelectItem key={task.id} value={task.id} className="focus:bg-slate-700">
                         <div className="flex items-center space-x-2">
-                          <task.icon className="h-4 w-4" />
+                          <task.icon className="h-4 w-4 text-purple-400" />
                           <span>{task.title}</span>
                         </div>
                       </SelectItem>
@@ -574,14 +579,14 @@ export default function AgentsPage() {
               </div>
 
               {selectedTask && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
                   <div className="flex items-start space-x-3">
-                    <selectedTask.icon className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <selectedTask.icon className="h-5 w-5 text-sky-400 mt-0.5" />
                     <div>
-                      <h4 className="font-semibold text-blue-900">{selectedTask.title}</h4>
-                      <p className="text-sm text-blue-700 mt-1">{selectedTask.description}</p>
-                      <div className="mt-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                        Agent: {selectedTask.agent === 'financial' ? 'Financial Agent' : 'Property Project Agent'}
+                      <h4 className="font-semibold text-white">{selectedTask.title}</h4>
+                      <p className="text-sm text-slate-400 mt-1">{selectedTask.description}</p>
+                      <div className="mt-2 text-xs text-slate-500 bg-slate-700 px-2 py-1 rounded w-fit">
+                        Agent: {selectedTask.agent === 'financial' ? 'Financial Agent' : selectedTask.agent === 'property-project' ? 'Property Project Agent' : 'Market Analysis Agent'}
                       </div>
                     </div>
                   </div>
@@ -590,21 +595,21 @@ export default function AgentsPage() {
 
               {selectedTask?.requiresInput && (
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold">Task Parameters</Label>
+                  <Label className="text-sm font-semibold text-slate-200">Task Parameters</Label>
                   {selectedTask.requiresInput.map((input) => (
                     <div key={input.name} className="space-y-2">
-                      <Label htmlFor={input.name} className="text-sm">
+                      <Label htmlFor={input.name} className="text-sm text-slate-400">
                         {input.name.charAt(0).toUpperCase() + input.name.slice(1)}
                       </Label>
                       {input.type === 'select' ? (
-                        <Select 
-                          value={taskInputs[input.name] || ''} 
+                        <Select
+                          value={taskInputs[input.name] || ''}
                           onValueChange={(value) => handleInputChange(input.name, value)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                             <SelectValue placeholder={`Select ${input.name}...`} />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-slate-800 border-slate-700 text-white">
                             {input.options?.map((option) => (
                               <SelectItem key={option} value={option}>
                                 {option}
@@ -619,6 +624,7 @@ export default function AgentsPage() {
                           placeholder={input.placeholder}
                           value={taskInputs[input.name] || ''}
                           onChange={(e) => handleInputChange(input.name, e.target.value)}
+                          className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                         />
                       )}
                     </div>
@@ -627,10 +633,10 @@ export default function AgentsPage() {
               )}
 
               <div className="flex space-x-2">
-                <Button 
-                  onClick={executeTask} 
+                <Button
+                  onClick={executeTask}
                   disabled={isExecuting || !isTaskReady()}
-                  className="flex-1"
+                  className="flex-1 bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600"
                 >
                   {isExecuting ? (
                     <>
@@ -648,38 +654,37 @@ export default function AgentsPage() {
 
               {showResult && taskResult && (
                 <div className="mt-6 space-y-4">
-                  {/* Check if this is a market analysis task */}
                   {selectedTask && selectedTask.category === 'Market Analysis' ? (
-                    <MarketVisualizationDashboard 
-                      result={taskResult} 
-                      taskId={selectedTask.id} 
+                    <MarketVisualizationDashboard
+                      result={taskResult}
+                      taskId={selectedTask.id}
                     />
                   ) : (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-3">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <h4 className="font-semibold text-green-900">Task Completed Successfully</h4>
-                        <Badge variant="secondary" className="ml-auto">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <h4 className="font-semibold text-white">Task Completed Successfully</h4>
+                        <Badge className="ml-auto bg-slate-700 text-slate-300 border-slate-600">
                           {Math.round(taskResult.confidence * 100)}% Confidence
                         </Badge>
                       </div>
-                      
+
                       <div className="prose prose-sm max-w-none">
-                        <div className="whitespace-pre-wrap text-sm text-gray-800 bg-white p-3 rounded border">
+                        <div className="whitespace-pre-wrap text-sm text-slate-300 bg-slate-900 p-3 rounded border border-slate-700">
                           {taskResult.message}
                         </div>
                       </div>
 
                       {taskResult.actions && taskResult.actions.length > 0 && (
                         <div className="mt-4">
-                          <h5 className="font-semibold text-green-900 mb-2">Actions Completed:</h5>
+                          <h5 className="font-semibold text-white mb-2">Actions Completed:</h5>
                           <div className="space-y-2">
                             {taskResult.actions.map((action: any, index: number) => (
-                              <div key={index} className="flex items-center space-x-2 text-sm">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              <div key={index} className="flex items-center space-x-2 text-sm text-slate-400">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
                                 <span>{action.type}</span>
                                 {action.type === 'emails_sent' && action.data && (
-                                  <Badge variant="outline" className="ml-auto">
+                                  <Badge className="ml-auto bg-slate-700 text-slate-300 border-slate-600">
                                     {action.data.totalSent} emails sent
                                   </Badge>
                                 )}
@@ -691,8 +696,8 @@ export default function AgentsPage() {
 
                       {taskResult.nextSteps && taskResult.nextSteps.length > 0 && (
                         <div className="mt-4">
-                          <h5 className="font-semibold text-green-900 mb-2">Recommended Next Steps:</h5>
-                          <ul className="list-disc list-inside text-sm text-green-800 space-y-1">
+                          <h5 className="font-semibold text-white mb-2">Recommended Next Steps:</h5>
+                          <ul className="list-disc list-inside text-sm text-slate-400 space-y-1">
                             {taskResult.nextSteps.map((step: string, index: number) => (
                               <li key={index}>{step}</li>
                             ))}
@@ -708,32 +713,43 @@ export default function AgentsPage() {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          <Card>
+          <Card className="bg-slate-900 border-slate-800 text-white">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Activity className="mr-2 h-5 w-5" />
+                <Activity className="mr-2 h-5 w-5 text-purple-400" />
                 Task History
               </CardTitle>
-              <CardDescription>Recent agent executions and their results</CardDescription>
+              <CardDescription className="text-slate-400">Recent agent executions and their results</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {tasks.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
+                  <p className="text-slate-400 text-center py-8">
                     No tasks executed yet. Try executing a task above!
                   </p>
                 ) : (
                   tasks.slice(0, 10).map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium">{task.input}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Agent: {task.agentId} • {new Date(task.createdAt).toLocaleString()}
-                        </p>
+                    <div key={task.id} className="flex items-center justify-between p-3 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="bg-primary/10 p-2 rounded-full text-white flex-shrink-0">
+                          {getAgentIcon(task.agentId)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-white truncate">{task.input}</p>
+                          <p className="text-sm text-slate-400 truncate">
+                            Agent: {task.agentId}
+                          </p>
+                        </div>
                       </div>
-                      <Badge className={getStatusBadge(task.status)}>
-                        {task.status}
-                      </Badge>
+                      <div className="flex items-center space-x-2 text-sm flex-shrink-0">
+                        <Badge className={`font-semibold ${getStatusBadge(task.status)}`}>
+                          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                        </Badge>
+                        <div className="flex items-center space-x-1 text-slate-400">
+                          <Clock className="h-4 w-4" />
+                          <span>{new Date(task.createdAt).toLocaleTimeString()}</span>
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}
