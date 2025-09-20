@@ -1,6 +1,7 @@
 "use server";
 
 import { NextResponse } from "next/server";
+import { chatCompletion } from "@/lib/huggingface";
 // Uncomment and use if needed:
 // import { checkApiLimit, increaseApiLimit } from "@/lib/api-limit";
 
@@ -26,72 +27,21 @@ export async function POST(req: Request) {
       ...messages,
     ];
 
-    const ollamaResponse = await fetch("http://127.0.0.1:11434/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "deepseek-r1:14b",
-        messages: messagesWithTemplate,
-        stream: true
-      }),
-    });
+    // Use the Gemini-backed chatCompletion wrapper instead of Ollama.
+    const responseText = await chatCompletion(messagesWithTemplate as any);
 
-    if (!ollamaResponse.ok) {
-      return NextResponse.json(
-        { error: `Ollama API error: ${ollamaResponse.statusText}` },
-        { status: ollamaResponse.status }
-      );
-    }
-
-    const reader = ollamaResponse.body?.getReader();
-    if (!reader) throw new Error("No response body");
-
-    // Create a new stream that buffers by lines and sends each JSON line
+    // Return a simple newline-delimited JSON stream so the existing client
+    // streaming parser (which reads lines of JSON and expects { message }) keeps
+    // working without client changes.
     const stream = new ReadableStream({
       start(controller) {
-        const decoder = new TextDecoder();
-        let buffer = "";
-        function push() {
-          reader.read().then(({ done, value }) => {
-            if (done) {
-              if (buffer.trim()) {
-                try {
-                  const json = JSON.parse(buffer.trim());
-                  if (json.message?.content) {
-                    controller.enqueue(
-                      new TextEncoder().encode(JSON.stringify({ message: json.message.content }) + "\n")
-                    );
-                  }
-                } catch (err) {
-                  console.error("Error parsing final JSON line:", err);
-                }
-              }
-              controller.close();
-              return;
-            }
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            // Process all complete lines
-            for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i].trim();
-              if (line) {
-                try {
-                  const json = JSON.parse(line);
-                  if (json.message?.content) {
-                    controller.enqueue(
-                      new TextEncoder().encode(JSON.stringify({ message: json.message.content }) + "\n")
-                    );
-                  }
-                } catch (err) {
-                  console.error("Error parsing JSON line:", err);
-                }
-              }
-            }
-            buffer = lines[lines.length - 1];
-            push();
-          });
+        try {
+          const payload = JSON.stringify({ message: responseText }) + "\n";
+          controller.enqueue(new TextEncoder().encode(payload));
+        } catch (err) {
+          controller.enqueue(new TextEncoder().encode(JSON.stringify({ message: "Server error" }) + "\n"));
         }
-        push();
+        controller.close();
       }
     });
 
