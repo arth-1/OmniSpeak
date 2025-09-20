@@ -109,36 +109,43 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)]">
-      <Card className="flex-1 flex flex-col">
+    <div className="h-[calc(100vh-8rem)] p-6 bg-zinc-950 text-white font-sans">
+      <Card className="flex-1 flex flex-col h-full bg-zinc-900 border-zinc-800 rounded-2xl shadow-lg">
         <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+          <div className="space-y-6">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className="flex items-start gap-2 max-w-[80%]">
+                <div className="flex items-start gap-3 max-w-[80%]">
                   {message.sender === "ai" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                    <Avatar className="h-8 w-8 bg-zinc-800 border-zinc-700">
+                      <AvatarFallback className="bg-zinc-800 text-purple-400">
                         <Bot size={16} />
                       </AvatarFallback>
                     </Avatar>
                   )}
                   <div
-                    className={`rounded-lg px-4 py-2 ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                    className={`rounded-xl p-4 shadow-md text-white
+                      ${message.sender === "user"
+                        ? "bg-purple-600 rounded-br-sm"
+                        : "bg-zinc-800 rounded-bl-sm"
+                      }
+                    `}
                   >
                     {message.sender === "ai" ? (
                       <Markdown>{message.content}</Markdown>
                     ) : (
                       <p>{message.content}</p>
                     )}
-                    <p className="text-xs opacity-70 mt-1">{formatTime(message.timestamp)}</p>
+                    <p className="text-xs opacity-60 mt-2 text-right">
+                      {formatTime(message.timestamp)}
+                    </p>
                   </div>
                   {message.sender === "user" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                    <Avatar className="h-8 w-8 bg-zinc-800 border-zinc-700">
+                      <AvatarFallback className="bg-zinc-800 text-teal-400">
                         <User size={16} />
                       </AvatarFallback>
                     </Avatar>
@@ -149,19 +156,27 @@ export default function ChatPage() {
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-        <CardContent className="p-4 border-t">
-          <div className="flex gap-2">
+        <CardContent className="p-4 border-t border-zinc-800">
+          <div className="flex items-center gap-3">
             <Input
               placeholder="Type your message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1"
+              className="flex-1 bg-zinc-800 text-white border-zinc-700 placeholder:text-zinc-500 py-6 text-base"
             />
-            <Button size="icon" onClick={handleAudioRecording}>
-              <Mic className={isRecording ? "text-red-500" : ""} />
+            <Button 
+              size="icon" 
+              onClick={handleAudioRecording} 
+              className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
+            >
+              <Mic className={isRecording ? "text-red-500" : "text-fuchsia-400"} />
             </Button>
-            <Button size="icon" onClick={handleSendMessage}>
+            <Button 
+              size="icon" 
+              onClick={handleSendMessage} 
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
               <Send />
             </Button>
           </div>

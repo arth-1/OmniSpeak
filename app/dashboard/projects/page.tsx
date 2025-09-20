@@ -71,14 +71,14 @@ const useLocalStorage = (key: string, initialValue: Project[]) => {
 
 function StatusBadge({ status }: { status: "active" | "pending" | "completed" }) {
   const statusConfig = {
-    active: { label: "Active", variant: "default" },
-    pending: { label: "Pending", variant: "secondary" },
-    completed: { label: "Completed", variant: "outline" },
+    active: { label: "Active", variant: "default", colors: "bg-teal-500 hover:bg-teal-600 text-white" },
+    pending: { label: "Pending", variant: "secondary", colors: "bg-orange-500 hover:bg-orange-400 text-white" },
+    completed: { label: "Completed", variant: "outline", colors: "bg-green-500 hover:bg-green-400 text-white" },
   };
 
   const config = statusConfig[status];
 
-  return <Badge variant={config.variant as any}>{config.label}</Badge>;
+  return <Badge className={`${config.colors}`}>{config.label}</Badge>;
 }
 
 function ProjectCard({ project, onEdit, onDelete }: {
@@ -87,7 +87,7 @@ function ProjectCard({ project, onEdit, onDelete }: {
   onDelete: (projectId: string) => void;
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-slate-800 border-gray-700 shadow-xl rounded-2xl">
       <div className="relative h-48">
         <Image
           src={project.image || "/placeholder-project.jpg"}
@@ -97,57 +97,57 @@ function ProjectCard({ project, onEdit, onDelete }: {
           height={200}
           priority
         />
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-4 right-4">
           <StatusBadge status={project.status} />
         </div>
       </div>
       
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle>{project.name}</CardTitle>
+          <CardTitle className="text-white">{project.name}</CardTitle>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => onEdit(project)}>
+            <DropdownMenuContent className="bg-slate-700 border-gray-600 text-white">
+              <DropdownMenuItem onClick={() => onEdit(project)} className="hover:bg-slate-600">
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(project.id)}>
+              <DropdownMenuItem onClick={() => onDelete(project.id)} className="hover:bg-slate-600 text-red-400">
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <CardDescription className="line-clamp-2">{project.description}</CardDescription>
+        <CardDescription className="line-clamp-2 text-gray-400">{project.description}</CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-4 pb-2">
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm text-gray-400">
             <span>Progress</span>
             <span>{project.progress}%</span>
           </div>
-          <Progress value={project.progress} />
+          <Progress value={project.progress} className="[&::-webkit-progress-bar]:bg-slate-700 [&::-webkit-progress-value]:bg-teal-500" />
         </div>
         
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm text-gray-400">
           <div className="flex items-center">
-            <Building2 className="mr-1 h-4 w-4 text-muted-foreground" />
+            <Building2 className="mr-1 h-4 w-4 text-teal-400" />
             <span>{project.id}</span>
           </div>
           <div className="flex items-center">
-            <Users className="mr-1 h-4 w-4 text-muted-foreground" />
+            <Users className="mr-1 h-4 w-4 text-teal-400" />
             <span>{project.clientCount} Clients</span>
           </div>
         </div>
       </CardContent>
       
       <CardFooter className="pt-0">
-        <div className="flex items-center text-sm text-muted-foreground w-full">
-          <CalendarIcon className="mr-1 h-4 w-4" />
+        <div className="flex items-center text-sm text-gray-500 w-full">
+          <CalendarIcon className="mr-1 h-4 w-4 text-gray-400" />
           <span>
             {format(new Date(project.startDate), 'MMM dd, yyyy')} 
             {project.endDate && ` - ${format(new Date(project.endDate), 'MMM dd, yyyy')}`}
@@ -166,7 +166,7 @@ function ProjectGrid({ projects, onEdit, onDelete }: {
   if (projects.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-muted-foreground">No projects found</p>
+        <p className="text-gray-400">No projects found</p>
       </div>
     );
   }
@@ -269,33 +269,33 @@ export default function ProjectsPage() {
   const completedProjects = filteredProjects.filter(p => p.status === "completed");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 bg-slate-900 text-white font-sans min-h-screen">
       <div className="flex justify-between items-center">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-3xl font-bold tracking-tight">Projects</h2>
+          <p className="text-gray-400">
             Manage your real estate development projects
           </p>
         </div>
 
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-teal-500 hover:bg-teal-600 text-white">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-2xl bg-slate-800 text-white border-gray-700">
+            <DialogHeader className="border-b border-gray-700 pb-4">
               <DialogTitle>{editProject ? "Edit Project" : "New Project"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label>Project Name</label>
-                  <Input {...form.register("name")} />
+                  <Input {...form.register("name")} className="bg-slate-700 text-white border-gray-600 placeholder:text-gray-500" />
                   {form.formState.errors.name && (
-                    <p className="text-red-500 text-sm">{form.formState.errors.name.message}</p>
+                    <p className="text-red-400 text-sm">{form.formState.errors.name.message}</p>
                   )}
                 </div>
 
@@ -303,7 +303,7 @@ export default function ProjectsPage() {
                   <label>Status</label>
                   <select
                     {...form.register("status")}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 rounded bg-slate-700 border border-gray-600"
                   >
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
@@ -314,9 +314,9 @@ export default function ProjectsPage() {
 
               <div className="space-y-2">
                 <label>Description</label>
-                <Input {...form.register("description")} />
+                <Input {...form.register("description")} className="bg-slate-700 text-white border-gray-600 placeholder:text-gray-500" />
                 {form.formState.errors.description && (
-                  <p className="text-red-500 text-sm">{form.formState.errors.description.message}</p>
+                  <p className="text-red-400 text-sm">{form.formState.errors.description.message}</p>
                 )}
               </div>
 
@@ -328,6 +328,7 @@ export default function ProjectsPage() {
                     min={0}
                     max={100}
                     {...form.register("progress", { valueAsNumber: true })}
+                    className="bg-slate-700 text-white border-gray-600 placeholder:text-gray-500"
                   />
                 </div>
 
@@ -337,6 +338,7 @@ export default function ProjectsPage() {
                     type="number"
                     min={0}
                     {...form.register("clientCount", { valueAsNumber: true })}
+                    className="bg-slate-700 text-white border-gray-600 placeholder:text-gray-500"
                   />
                 </div>
               </div>
@@ -352,7 +354,7 @@ export default function ProjectsPage() {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        className="rounded-md border"
+                        className="rounded-md border bg-slate-700 border-gray-600"
                       />
                     )}
                   />
@@ -368,7 +370,7 @@ export default function ProjectsPage() {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        className="rounded-md border"
+                        className="rounded-md border bg-slate-700 border-gray-600"
                       />
                     )}
                   />
@@ -377,10 +379,10 @@ export default function ProjectsPage() {
 
               <div className="space-y-2">
                 <label>Image URL</label>
-                <Input {...form.register("image")} />
+                <Input {...form.register("image")} className="bg-slate-700 text-white border-gray-600 placeholder:text-gray-500" />
               </div>
 
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full bg-teal-500 hover:bg-teal-600 text-white">
                 {editProject ? "Save Changes" : "Create Project"}
               </Button>
             </form>
@@ -390,11 +392,11 @@ export default function ProjectsPage() {
 
       <div className="flex items-center space-x-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
           <Input
             type="search"
             placeholder="Search projects..."
-            className="pl-8"
+            className="pl-8 bg-slate-800 border-gray-700 text-white placeholder:text-gray-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -402,11 +404,11 @@ export default function ProjectsPage() {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Projects ({filteredProjects.length})</TabsTrigger>
-          <TabsTrigger value="active">Active ({activeProjects.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({pendingProjects.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedProjects.length})</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-slate-800 border-gray-700">
+          <TabsTrigger value="all" className="data-[state=active]:bg-teal-500 data-[state=active]:text-white">All Projects ({filteredProjects.length})</TabsTrigger>
+          <TabsTrigger value="active" className="data-[state=active]:bg-teal-500 data-[state=active]:text-white">Active ({activeProjects.length})</TabsTrigger>
+          <TabsTrigger value="pending" className="data-[state=active]:bg-teal-500 data-[state=active]:text-white">Pending ({pendingProjects.length})</TabsTrigger>
+          <TabsTrigger value="completed" className="data-[state=active]:bg-teal-500 data-[state=active]:text-white">Completed ({completedProjects.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
