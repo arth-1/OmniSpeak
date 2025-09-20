@@ -13,8 +13,8 @@ type CallSummary = {
   id: string;
   transcript: string;
   summary: string;
-  positivity: number;
-  quality: number;
+  rating: number;
+  clientInterest: string;
   keywords: string[];
   date: string;
   duration: number;
@@ -23,7 +23,8 @@ type CallSummary = {
     neutral: number;
     negative: number;
   };
-  recording: string;
+  nextSteps: string[];
+  recording?: string;
 };
 
 export default function VoicePage() {
@@ -31,7 +32,7 @@ export default function VoicePage() {
   const [currentSummary, setCurrentSummary] = useState<CallSummary | null>(null);
   const [history, setHistory] = useState<CallSummary[]>([]);
   const [isRecording, setIsRecording] = useState(false);
-  const [isAudioSupported, setIsAudioSupported] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
@@ -40,25 +41,9 @@ export default function VoicePage() {
     const savedHistory = localStorage.getItem("callHistory");
     if (savedHistory) {
       try {
-        const parsedHistory = JSON.parse(savedHistory);
-        
-        // Data migration for older entries
-        const migratedHistory = parsedHistory.map((call: any) => ({
-          ...call,
-          quality: call.quality ?? 0, // Add default quality if missing
-          sentiment: call.sentiment || { 
-            positive: 0, 
-            neutral: 0, 
-            negative: 0 
-          }
-        }));
-        
-        setHistory(migratedHistory);
-      } catch (error) {
-        console.error("Error parsing call history:", error);
-        // Clear corrupted history
+        setHistory(JSON.parse(savedHistory));
+      } catch {
         localStorage.removeItem("callHistory");
-        setHistory([]);
       }
     }
   }, []);
@@ -69,40 +54,47 @@ export default function VoicePage() {
     }
   }, [history]);
 
-  // Check browser support
-  useEffect(() => {
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      setIsAudioSupported(false);
-    }
-  }, []);
-
-  
-
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true
+      });
+      
       mediaRecorder.current = new MediaRecorder(stream);
+      audioChunks.current = [];
       
       mediaRecorder.current.ondataavailable = (e) => {
-        audioChunks.current.push(e.data);
+        if (e.data.size > 0) {
+          audioChunks.current.push(e.data);
+        }
       };
       
       mediaRecorder.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
-        audioChunks.current = [];
-        await processRecording(audioBlob);
+        try {
+          if (audioChunks.current.length > 0) {
+            const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
+            await processRecording(audioBlob);
+          }
+        } catch (err) {
+          console.error("Processing error:", err);
+          setError("Failed to process recording");
+        } finally {
+          stream.getTracks().forEach(track => track.stop());
+        }
       };
 
       mediaRecorder.current.start();
       setIsRecording(true);
+      
     } catch (error) {
-      console.error("Error accessing microphone:", error);
-      setIsAudioSupported(false);
+      console.error("Recording error:", error);
+      setError("Microphone access denied. Please check permissions.");
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder.current) {
+    if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
       mediaRecorder.current.stop();
       setIsRecording(false);
     }
@@ -110,285 +102,267 @@ export default function VoicePage() {
 
   const processRecording = async (audioBlob: Blob) => {
     setIsProcessing(true);
+    setError(null);
+    
     try {
-      // Convert to data URL for storage
-      const recording = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(audioBlob);
+      const formData = new FormData();
+      formData.append("audio", audioBlob);
+
+      const response = await fetch("/api/voice", {
+        method: "POST",
+        body: formData,
       });
 
-      const transcript = await convertSpeechToText(audioBlob);
-      const analysis = await analyzeCall(transcript);
-      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Processing failed");
+      }
+
+      const recordingUrl = URL.createObjectURL(audioBlob);
+
       const summary: CallSummary = {
         id: Date.now().toString(),
-        transcript,
-        recording,
+        transcript: data.transcript,
+        summary: data.analysis.summary,
+        rating: data.analysis.rating,
+        clientInterest: data.analysis.clientInterest,
+        keywords: data.analysis.keywords,
         date: new Date().toISOString(),
-        duration: Math.floor(audioBlob.size / (16000 * 2)),
-        ...analysis,
+        duration: Math.floor(audioBlob.size / 2000),
+        sentiment: data.analysis.sentiment,
+        nextSteps: data.analysis.nextSteps,
+        recording: recordingUrl
       };
 
       setCurrentSummary(summary);
-      setHistory(prev => [summary, ...prev]);
-    } catch (error) {
-      console.error("Processing failed:", error);
+      setHistory(prev => [summary, ...prev.slice(0, 9)]);
+      
+    } catch (err: any) {
+      console.error("API error:", err);
+      setError(err.message || "Analysis failed. Please try again.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (!isAudioSupported) {
-    return (
-      <div className="p-6">
-        <Card className="text-red-500">
-          <CardHeader>
-            <CardTitle>Browser Not Supported</CardTitle>
-          </CardHeader>
-          <CardContent>
-            Audio recording is not supported in this browser. Please use Chrome, Firefox, or Edge.
+  return (
+    <div className="p-6 space-y-6">
+      {/* Error Display */}
+      {error && (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-4">
+            <div className="text-red-700">
+              <p className="font-medium">Error</p>
+              <p className="text-sm">{error}</p>
+            </div>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-      {/* Controls Section */}
-      <div className="md:col-span-1 space-y-4">
+      {/* Recording Controls */}
       <Card>
-  <CardHeader>
-    <CardTitle>Call Controls</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    <Button
-      variant={isRecording ? "destructive" : "default"}
-      className={`w-full ${!isRecording ? "bg-black text-white" : ""}`}
-      onClick={isRecording ? stopRecording : startRecording}
-      disabled={isProcessing}
-    >
-      {isRecording ? "Stop Recording" : "Start Recording"}
-    </Button>
-  </CardContent>
-</Card>
+        <CardHeader>
+          <CardTitle>Voice Call Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Button
+              variant={isRecording ? "destructive" : "default"}
+              className="w-full"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing}
+            >
+              {isRecording ? "⏹️ Stop Recording" : "🎤 Start Recording"}
+              {isProcessing && " (Processing...)"}
+            </Button>
+            
+            {isProcessing && (
+              <div className="text-center">
+                <Progress value={50} className="w-full" />
+                <p className="text-sm text-muted-foreground mt-2">Analyzing your call...</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Current Analysis Results */}
+      {currentSummary && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Analysis Results</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Summary Section */}
+            <div>
+              <h3 className="font-semibold mb-2">Summary</h3>
+              <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+                {currentSummary.summary}
+              </p>
+            </div>
 
-        {currentSummary && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Call Insights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <StatItem label="Positivity Score" value={`${currentSummary.positivity}/10`} />
-              <StatItem label="Quality Score" value={`${currentSummary.quality}/5`} />
-              <StatItem label="Duration" value={`${currentSummary.duration}s`} />
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Key Topics</p>
-                <div className="flex flex-wrap gap-2">
-                  {currentSummary.keywords.map((word) => (
-                    <Badge key={word} variant="outline">
-                      {word}
+            {/* Transcript Section */}
+            <div>
+              <h3 className="font-semibold mb-2">Transcript</h3>
+              <p className="text-gray-600 text-sm bg-blue-50 p-4 rounded-lg">
+                {currentSummary.transcript}
+              </p>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column - Metrics */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Metrics</h3>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium">Quality Rating</span>
+                    <Badge variant="outline" className="text-lg">
+                      {currentSummary.rating}/5
                     </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium">Client Interest</span>
+                    <Badge variant={
+                      currentSummary.clientInterest === "High" ? "default" :
+                      currentSummary.clientInterest === "Medium" ? "secondary" : "outline"
+                    }>
+                      {currentSummary.clientInterest}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium">Duration</span>
+                    <span className="font-medium">{currentSummary.duration}s</span>
+                  </div>
+                </div>
+
+                {/* Keywords */}
+                <div>
+                  <h4 className="font-medium mb-2">Key Topics</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {currentSummary.keywords.map((word, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {word}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Sentiment */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Sentiment Analysis</h3>
+                
+                <div className="space-y-4">
+                  {[
+                    { label: "Positive", value: currentSummary.sentiment.positive, color: "bg-green-500" },
+                    { label: "Neutral", value: currentSummary.sentiment.neutral, color: "bg-yellow-500" },
+                    { label: "Negative", value: currentSummary.sentiment.negative, color: "bg-red-500" }
+                  ].map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">{item.label}</span>
+                        <span className="text-gray-600">{item.value}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`${item.color} h-2 rounded-full transition-all duration-500`}
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </div>
 
-      {/* Main Content */}
-      <div className="md:col-span-2 space-y-6">
-        {currentSummary ? (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Call Analysis</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <p className="font-medium">Summary</p>
-                  <p className="text-muted-foreground">{currentSummary.summary}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium">Sentiment Analysis</p>
-                  <SentimentBars stats={currentSummary.sentiment} />
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium">Recording</p>
-                  <audio controls className="w-full">
-                    <source src={currentSummary.recording} type="audio/webm" />
-                  </audio>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        ) : (
-          <Card>
-  <CardHeader>
-    <CardTitle>Start a New Call</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <p className="text-muted-foreground">
-      Click <Button className="bg-black text-white">Start Recording</Button> to begin analyzing a voice call
-    </p>
-  </CardContent>
-</Card>
-
-        )}
-
-        {/* Call History */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Call History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-96">
-              <div className="space-y-4">
-                {history.map((call) => (
-                  <CallHistoryItem key={call.id} call={call} />
+            {/* Next Steps */}
+            <div>
+              <h3 className="font-semibold mb-3">Recommended Next Steps</h3>
+              <ul className="space-y-2">
+                {currentSummary.nextSteps.map((step, index) => (
+                  <li key={index} className="flex items-center p-3 bg-green-50 rounded-lg">
+                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-white text-sm font-bold">{index + 1}</span>
+                    </div>
+                    <span className="text-green-800">{step}</span>
+                  </li>
                 ))}
+              </ul>
+            </div>
+
+            {/* Recording Player */}
+            {currentSummary.recording && (
+              <div>
+                <h3 className="font-semibold mb-2">Recording</h3>
+                <audio controls className="w-full">
+                  <source src={currentSummary.recording} type="audio/webm" />
+                  Your browser does not support audio playback.
+                </audio>
               </div>
-            </ScrollArea>
+            )}
           </CardContent>
         </Card>
-      </div>
+      )}
+
+      {/* Call History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Calls</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-64">
+            <div className="space-y-4">
+              {history.map((call) => (
+                <CallHistoryItem key={call.id} call={call} />
+              ))}
+              {history.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No call history yet</p>
+                  <p className="text-sm">Start your first recording above</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 // Helper Components
-function StatItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between items-center">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  );
-}
-
-function SentimentBars({ stats }: { stats: CallSummary["sentiment"] }) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <div className="flex justify-between">
-          <span className="text-sm text-green-600">Positive</span>
-          <span className="text-sm">{stats.positive}%</span>
-        </div>
-        <Progress value={stats.positive} className="h-2" />
-      </div>
-      <div className="space-y-1">
-        <div className="flex justify-between">
-          <span className="text-sm text-yellow-600">Neutral</span>
-          <span className="text-sm">{stats.neutral}%</span>
-        </div>
-        <Progress value={stats.neutral} className="h-2" />
-      </div>
-      <div className="space-y-1">
-        <div className="flex justify-between">
-          <span className="text-sm text-red-600">Negative</span>
-          <span className="text-sm">{stats.negative}%</span>
-        </div>
-        <Progress value={stats.negative} className="h-2" />
-      </div>
-    </div>
-  );
-}
-
 function CallHistoryItem({ call }: { call: CallSummary }) {
-    return (
-      <Card className="p-4">
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-medium">{format(new Date(call.date), "MMM dd, yyyy HH:mm")}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">{call.summary}</p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <Badge variant="outline" className="shrink-0">
-                {(call.positivity ?? 0).toFixed(1)}/10
-              </Badge>
-              <Badge variant="outline" className="shrink-0">
-                Quality: {(call.quality ?? 0).toFixed(1)}/5
-              </Badge>
-            </div>
+  return (
+    <Card className="p-4 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <h4 className="font-medium text-sm">
+            {format(new Date(call.date), "MMM dd, yyyy 'at' HH:mm")}
+          </h4>
+          <p className="text-xs text-gray-600 line-clamp-2 mt-1">
+            {call.summary}
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Badge variant="outline" className="text-xs">
+              {call.rating}/5
+            </Badge>
+            <Badge variant={
+              call.clientInterest === "High" ? "default" :
+              call.clientInterest === "Medium" ? "secondary" : "outline"
+            } className="text-xs">
+              {call.clientInterest}
+            </Badge>
           </div>
-          <audio controls className="w-full mt-2">
-            <source src={call.recording} type="audio/webm" />
-          </audio>
         </div>
-      </Card>
-    );
-  }
-
-// Utility Functions
-async function analyzeCall(transcript: string) {
-  const SYSTEM_PROMPT = `Analyze this customer call transcript and provide:
-1. Concise 3-sentence summary focusing on key issues and outcomes
-2. Positivity score (1-10) based on customer sentiment
-3. Quality score (1-5) for conversation clarity and professionalism
-4. 5-7 key topics or keywords
-5. Sentiment breakdown (positive/neutral/negative percentages)
-
-Format response as JSON:
-{
-  "summary": "...",
-  "positivity": 7.2,
-  "quality": 4,
-  "keywords": ["billing", "technical", ...],
-  "sentiment": {
-    "positive": 65,
-    "neutral": 25,
-    "negative": 10
-  }
-}`;
-
-  try {
-    const response = await fetch("http://localhost:11434/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "deepseek-r1:14b",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: transcript }
-        ],
-        format: "json",
-        stream: false
-      }),
-    });
-
-    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-    
-    const result = await response.json();
-    
-    // Validate and normalize response
-    return {
-        summary: result.summary || "No summary generated",
-        positivity: Math.min(10, Math.max(0, Number(result.positivity) || 0)),
-        quality: Math.min(5, Math.max(0, Number(result.quality) || 0)), // Ensure number
-        keywords: Array.isArray(result.keywords) ? result.keywords.slice(0, 7) : [],
-        sentiment: {
-          positive: Math.min(100, Math.max(0, Number(result.sentiment?.positive) || 0)),
-          neutral: Math.min(100, Math.max(0, Number(result.sentiment?.neutral) || 0)),
-          negative: Math.min(100, Math.max(0, Number(result.sentiment?.negative) || 0))
-        }
-      };
-  } catch (error) {
-    console.error("Analysis error:", error);
-    return {
-      summary: "Analysis failed: " + (error instanceof Error ? error.message : "Unknown error"),
-      positivity: 0,
-      quality: 0,
-      keywords: [],
-      sentiment: { positive: 0, neutral: 0, negative: 0 }
-    };
-  }
-}
-
-async function convertSpeechToText(audioBlob: Blob): Promise<string> {
-  // Implement proper STT here (this is a mock implementation)
-  return "Customer called regarding a billing discrepancy. They expressed frustration about an overcharge but appreciated the quick response from support. The agent offered a 20% discount as compensation.";
+      </div>
+    </Card>
+  );
 }
