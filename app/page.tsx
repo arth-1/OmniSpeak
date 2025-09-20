@@ -1,161 +1,178 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Building2, MessageSquare, Headphones, Globe, FileText, Users, BarChart3 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import React from 'react';
+import { Vortex } from "@/components/ui/vortex";
+import BentoGridDemo from "@/components/bento-grid-demo";
 
-// app/dashboard/page.tsx
 export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-primary/15 via-background to-primary/10 border-b">
-        <div className="container mx-auto px-4 py-8 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-full bg-primary/10">
-              <Building2 className="h-7 w-7 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Glass Navigation */}
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-white/10 border-b border-white/20">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-400/20 to-purple-400/20 backdrop-blur-sm border border-white/20">
+                <Building2 className="h-6 w-6 text-blue-300" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+                OmniSpeak
+              </span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Omni Speak
-            </span>
-          </div>
-          <div className="space-x-4">
-            <Link href="/sign-in">
-              <Button variant="outline" className="rounded-full px-6 shadow-sm hover:shadow-md transition-shadow">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button className="rounded-full px-6 shadow-lg hover:shadow-xl transition-shadow">
-                Get Started
-              </Button>
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/sign-in">
+                <Button 
+                  variant="outline" 
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-300"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/sign-up">
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl px-6 shadow-lg hover:shadow-xl transition-all duration-300">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="py-24 px-4 bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="container mx-auto max-w-6xl text-center">
-            <div className="mb-8 inline-flex items-center gap-2 bg-primary/10 px-6 py-2 rounded-full border">
-              <span className="text-sm font-medium text-primary">AI Powered Real Estate Solutions</span>
+      {/* Hero Section with Full Vortex Background */}
+      <section className="relative pt-20 pb-16 px-6 min-h-screen">
+        <Vortex
+          backgroundColor="transparent"
+          rangeY={400}
+          particleCount={500}
+          baseHue={220}
+          className="absolute inset-0 w-full h-full"
+        >
+          <div className="container mx-auto relative z-10">
+            <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+              <div className="space-y-8">
+                <div className="space-y-6">
+                  <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                    <span className="bg-gradient-to-r from-white to-blue-300 bg-clip-text text-transparent">
+                      AI-Powered Real Estate
+                    </span>
+                    <br />
+                    <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+                      Communication Hub
+                    </span>
+                  </h1>
+                  <p className="text-xl text-blue-100/80 leading-relaxed max-w-lg">
+                    Transform conversations into insights. Transcribe calls, translate languages, 
+                    and generate summaries — all powered by cutting-edge AI.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link href="/dashboard">
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      Open Dashboard
+                    </Button>
+                  </Link>
+                  <Link href="/sign-up">
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm rounded-xl px-8 py-3 transition-all duration-300"
+                    >
+                      Start Free Trial
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="backdrop-blur-sm bg-white/10 rounded-2xl border border-white/20 p-8 shadow-2xl">
+                  <div className="text-center space-y-6">
+                    <h3 className="text-2xl md:text-3xl font-bold text-white">
+                      Transform Client Communication
+                    </h3>
+                    <p className="text-blue-100/80 text-lg leading-relaxed">
+                      AI-powered conversations, instant translations, and automatic summaries 
+                      to help you close deals faster than ever.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 pt-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-300">95%</div>
+                        <div className="text-sm text-blue-100/60">Accuracy Rate</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-300">50+</div>
+                        <div className="text-sm text-blue-100/60">Languages</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h1 className="text-5xl font-bold tracking-tight mb-6 text-gray-200">
-  Revolutionize Your Real Estate Communication
-</h1>
-            <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
-              Our AI-powered assistant helps real estate professionals communicate effectively, 
-              manage clients, and close deals faster with advanced language processing and analytics.
+          </div>
+        </Vortex>
+      </section>
+
+      {/* Features Section with Bento Grid */}
+      <section className="py-20 px-6">
+        <div className="container mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-blue-300 bg-clip-text text-transparent">
+              Powerful Features for Modern Agents
+            </h2>
+            <p className="text-blue-100/70 text-lg max-w-2xl mx-auto">
+              Everything you need to communicate effectively and close deals faster
             </p>
-            <div className="flex justify-center gap-4">
-              <Link href="/sign-up">
-                <Button size="lg" className="rounded-full px-8 shadow-lg hover:shadow-xl transition-shadow">
-                  Start Free Trial
-                </Button>
-              </Link>
-              <Link href="#features">
-                <Button size="lg" variant="outline" className="rounded-full px-8 border-2">
-                  Explore Features
-                </Button>
-              </Link>
-            </div>
           </div>
-        </section>
+          <BentoGridDemo />
+        </div>
+      </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-24">
-          <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-16 text-gray-200">
-  Powerful Features for Real Estate Professionals
-</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <FeatureCard 
-                icon={<MessageSquare className="h-8 w-8" />}
-                title="AI Chat Assistant"
-                description="Intelligent chat system that can answer client questions, schedule viewings, and provide property information."
-              />
-              <FeatureCard 
-                icon={<Headphones className="h-8 w-8" />}
-                title="Voice Processing"
-                description="Convert voice to text, transcribe calls, and analyze conversations for better client understanding."
-              />
-              <FeatureCard 
-                icon={<Globe className="h-8 w-8" />}
-                title="Multi-language Support"
-                description="Translate communications in real-time to serve international clients in their preferred language."
-              />
-              <FeatureCard 
-                icon={<FileText className="h-8 w-8" />}
-                title="Smart Summarization"
-                description="Automatically generate summaries of long conversations, documents, and property details."
-              />
-              <FeatureCard 
-                icon={<Users className="h-8 w-8" />}
-                title="Client Management"
-                description="Organize clients, track interactions, and manage communication all in one place."
-              />
-              <FeatureCard 
-                icon={<BarChart3 className="h-8 w-8" />}
-                title="Lead Scoring"
-                description="Analyze client interactions to identify high-potential leads and prioritize your efforts."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-24 px-4 bg-gradient-to-r from-primary to-primary/90">
-          <div className="container mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl font-bold mb-6 text-primary-foreground">
+      {/* CTA Section */}
+      <section className="py-20 px-6">
+        <div className="container mx-auto max-w-4xl text-center">
+          <div className="backdrop-blur-sm bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-3xl border border-white/20 p-12 shadow-2xl">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-white to-blue-300 bg-clip-text text-transparent">
               Ready to Transform Your Real Estate Business?
             </h2>
-            <p className="text-xl mb-10 text-primary-foreground/90">
-              Join thousands of real estate professionals who are saving time, improving client relationships, and closing more deals.
+            <p className="text-xl text-blue-100/80 mb-10 leading-relaxed">
+              Join thousands of agents who are saving time, improving client relationships, and closing more deals.
             </p>
             <Link href="/sign-up">
-              <Button size="lg" variant="secondary" className="rounded-full px-8 shadow-lg hover:shadow-xl transition-shadow">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl px-12 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              >
                 Get Started Today
               </Button>
             </Link>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/50">
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-6 md:mb-0">
-              <div className="p-2 rounded-full bg-primary/10">
-                <Building2 className="h-6 w-6 text-primary" />
+      <footer className="py-12 px-6 backdrop-blur-sm bg-white/5 border-t border-white/20">
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-400/20 to-purple-400/20 backdrop-blur-sm border border-white/20">
+                <Building2 className="h-5 w-5 text-blue-300" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Omni Speak
+              <span className="font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+                OmniSpeak
               </span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              © 2025 Omni Speak. All rights reserved.
+            <p className="text-blue-100/60 text-sm">Made with love and lots of coffee</p>
+            <div className="flex items-center gap-6">
+              <Link href="/terms" className="text-blue-100/60 hover:text-blue-300 transition-colors">Terms</Link>
+              <Link href="/privacy" className="text-blue-100/60 hover:text-blue-300 transition-colors">Privacy</Link>
             </div>
           </div>
         </div>
       </footer>
-    </div>
-  );
-}
-
-// FeatureCard Component
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
-  return (
-    <div className="group bg-card rounded-xl p-8 shadow-sm border hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
-      <div className="mb-6 flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 text-primary">
-        {React.cloneElement(icon as React.ReactElement, { className: "h-8 w-8" })}
-      </div>
-      <h3 className="text-xl font-semibold mb-4 text-foreground">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 }
