@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Ticket,
   LogOut,
+  Bot,
 } from "lucide-react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -82,6 +83,13 @@ export function Sidebar({ className }: SidebarProps) {
             COMMUNICATION
           </h2>
           <div className="space-y-1">
+            <NavItem
+              href="/dashboard/agents"
+              icon={<Bot className="mr-2 h-4 w-4" />}
+              isActive={pathname.startsWith("/dashboard/agents")}
+            >
+              AI Agents
+            </NavItem>
             <NavItem
               href="/dashboard/chat"
               icon={<MessageSquare className="mr-2 h-4 w-4" />}
