@@ -111,13 +111,6 @@ export function Sidebar({ className }: SidebarProps) {
             >
               Translation
             </NavItem>
-            <NavItem
-              href="/dashboard/summarize"
-              icon={<FileText className="mr-2 h-4 w-4" />}
-              isActive={pathname.startsWith("/dashboard/summarize")}
-            >
-              Summarization
-            </NavItem>
           </div>
         </div>
         <div className="px-3">
