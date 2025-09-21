@@ -196,16 +196,16 @@ export default function VoicePage() {
 
   if (!isSpeechSupported) {
     return (
-      <div className="p-6">
-        <Card className="bg-yellow-50 border-yellow-200">
+      <div className="space-y-8 p-6 bg-slate-950 text-white min-h-screen font-sans">
+        <Card className="bg-slate-900 border-slate-800 text-white">
           <CardHeader>
-            <CardTitle>Browser Not Supported</CardTitle>
+            <CardTitle className="text-white">Browser Not Supported</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-yellow-700">
+            <p className="text-slate-300">
               Speech recognition is not supported in your browser.
             </p>
-            <p className="text-sm text-yellow-600 mt-2">
+            <p className="text-sm text-slate-400 mt-2">
               Please use Chrome, Edge, or Safari for voice functionality.
             </p>
           </CardContent>
@@ -215,29 +215,33 @@ export default function VoicePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-8 p-6 bg-slate-950 text-white min-h-screen font-sans">
+      <header className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight text-white">Voice Call Analysis</h1>
+      </header>
+
       {/* Error Display */}
       {error && (
-        <Card className="bg-red-50 border-red-200">
+        <Card className="bg-red-900/20 border-red-700/30">
           <CardContent className="p-4">
-            <div className="text-red-700">
+            <div className="text-red-300">
               <p className="font-medium">Error</p>
-              <p className="text-sm">{error}</p>
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Recording Controls */}
-      <Card>
+      <Card className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
-          <CardTitle>Voice Call Analysis</CardTitle>
+          <CardTitle className="text-white">Voice Call Analysis</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <Button
               variant={isRecording ? "destructive" : "default"}
-              className="w-full"
+              className="w-full bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600"
               onClick={isRecording ? stopRecording : startRecording}
               disabled={isProcessing}
             >
@@ -246,9 +250,9 @@ export default function VoicePage() {
             </Button>
             
             {isRecording && (
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-700 font-medium">Listening...</p>
-                <p className="text-xs text-blue-600 mt-1">
+              <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                <p className="text-sm text-sky-400 font-medium">Listening...</p>
+                <p className="text-xs text-slate-400 mt-1">
                   {transcript || "Speak now about real estate..."}
                 </p>
               </div>
@@ -257,7 +261,7 @@ export default function VoicePage() {
             {isProcessing && (
               <div className="text-center">
                 <Progress value={50} className="w-full" />
-                <p className="text-sm text-muted-foreground mt-2">Analyzing your conversation with AI...</p>
+                <p className="text-sm text-slate-400 mt-2">Analyzing your conversation with AI...</p>
               </div>
             )}
           </div>
@@ -266,58 +270,61 @@ export default function VoicePage() {
 
       {/* Current Analysis Results */}
       {currentSummary && (
-        <Card>
+        <Card className="bg-slate-900 border-slate-800 text-white">
           <CardHeader>
-            <CardTitle>Analysis Results</CardTitle>
+            <CardTitle className="text-white">Analysis Results</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold mb-2">Summary</h3>
-              <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2 text-white">Summary</h3>
+              <p className="text-slate-300 bg-slate-800 p-4 rounded-lg border border-slate-700">
                 {currentSummary.summary}
               </p>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2">Transcript</h3>
-              <p className="text-gray-600 text-sm bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2 text-white">Transcript</h3>
+              <p className="text-slate-400 text-sm bg-slate-800 p-4 rounded-lg border border-slate-700">
                 {currentSummary.transcript}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h3 className="font-semibold">Metrics</h3>
+                <h3 className="font-semibold text-white">Metrics</h3>
                 
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium">Quality Rating</span>
-                    <Badge variant="outline" className="text-lg">
+                  <div className="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <span className="text-sm font-medium text-slate-300">Quality Rating</span>
+                    <Badge variant="outline" className="text-lg bg-slate-700 text-slate-200 border-slate-600">
                       {currentSummary.rating}/5
                     </Badge>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium">Client Interest</span>
+                  <div className="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <span className="text-sm font-medium text-slate-300">Client Interest</span>
                     <Badge variant={
                       currentSummary.clientInterest === "High" ? "default" :
                       currentSummary.clientInterest === "Medium" ? "secondary" : "outline"
+                    } className={
+                      currentSummary.clientInterest === "High" ? "bg-green-600 text-white" :
+                      currentSummary.clientInterest === "Medium" ? "bg-yellow-600 text-white" : "bg-slate-600 text-slate-200"
                     }>
                       {currentSummary.clientInterest}
                     </Badge>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium">Duration</span>
-                    <span className="font-medium">{currentSummary.duration}s</span>
+                  <div className="flex justify-between items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <span className="text-sm font-medium text-slate-300">Duration</span>
+                    <span className="font-medium text-white">{currentSummary.duration}s</span>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-medium mb-2">Key Topics</h4>
+                  <h4 className="font-medium mb-2 text-white">Key Topics</h4>
                   <div className="flex flex-wrap gap-2">
                     {currentSummary.keywords.map((word, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
+                      <Badge key={index} variant="secondary" className="text-xs bg-slate-700 text-slate-200 border-slate-600">
                         {word}
                       </Badge>
                     ))}
@@ -326,7 +333,7 @@ export default function VoicePage() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="font-semibold">Sentiment Analysis</h3>
+                <h3 className="font-semibold text-white">Sentiment Analysis</h3>
                 
                 <div className="space-y-4">
                   {[
@@ -336,10 +343,10 @@ export default function VoicePage() {
                   ].map((item, index) => (
                     <div key={index} className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="font-medium">{item.label}</span>
-                        <span className="text-gray-600">{item.value}%</span>
+                        <span className="font-medium text-slate-300">{item.label}</span>
+                        <span className="text-slate-400">{item.value}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-slate-700 rounded-full h-2">
                         <div
                           className={`${item.color} h-2 rounded-full transition-all duration-500`}
                           style={{ width: `${item.value}%` }}
@@ -352,14 +359,14 @@ export default function VoicePage() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-3">Recommended Next Steps</h3>
+              <h3 className="font-semibold mb-3 text-white">Recommended Next Steps</h3>
               <ul className="space-y-2">
                 {currentSummary.nextSteps.map((step, index) => (
-                  <li key={index} className="flex items-center p-3 bg-green-50 rounded-lg">
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                  <li key={index} className="flex items-center p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <span className="text-white text-sm font-bold">{index + 1}</span>
                     </div>
-                    <span className="text-green-800">{step}</span>
+                    <span className="text-slate-300">{step}</span>
                   </li>
                 ))}
               </ul>
@@ -369,9 +376,9 @@ export default function VoicePage() {
       )}
 
       {/* Call History */}
-      <Card>
+      <Card className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
-          <CardTitle>Recent Calls</CardTitle>
+          <CardTitle className="text-white">Recent Calls</CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-64">
@@ -380,7 +387,7 @@ export default function VoicePage() {
                 <CallHistoryItem key={call.id} call={call} />
               ))}
               {history.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-400">
                   <p>No call history yet</p>
                   <p className="text-sm">Start your first recording above</p>
                 </div>
@@ -396,23 +403,26 @@ export default function VoicePage() {
 // Helper Components
 function CallHistoryItem({ call }: { call: CallSummary }) {
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow">
+    <Card className="p-4 hover:shadow-md transition-shadow bg-slate-800 border-slate-700">
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h4 className="font-medium text-sm">
+          <h4 className="font-medium text-sm text-white">
             {format(new Date(call.date), "MMM dd, yyyy 'at' HH:mm")}
           </h4>
-          <p className="text-xs text-gray-600 line-clamp-2 mt-1">
+          <p className="text-xs text-slate-400 line-clamp-2 mt-1">
             {call.summary}
           </p>
           <div className="flex gap-2 mt-2">
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs bg-slate-700 text-slate-200 border-slate-600">
               {call.rating}/5
             </Badge>
             <Badge variant={
               call.clientInterest === "High" ? "default" :
               call.clientInterest === "Medium" ? "secondary" : "outline"
-            } className="text-xs">
+            } className={
+              call.clientInterest === "High" ? "bg-green-600 text-white" :
+              call.clientInterest === "Medium" ? "bg-yellow-600 text-white" : "bg-slate-600 text-slate-200"
+            }>
               {call.clientInterest}
             </Badge>
           </div>
