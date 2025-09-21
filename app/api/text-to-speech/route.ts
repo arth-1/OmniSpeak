@@ -1,6 +1,6 @@
 // app/api/tts/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { textToSpeech } from "../../../lib/gemini";
+import { textToSpeech } from "@/lib/huggingface";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,12 +13,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { audioBuffer, contentType } = await textToSpeech(text);
+    const audioBuffer = await textToSpeech(text);
 
     return new Response(audioBuffer, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
+        'Content-Type': 'audio/mpeg',
         'Content-Disposition': 'inline; filename="speech.mp3"',
       },
     });
