@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Bot, Activity, Settings, MessageSquare, TrendingUp, Users, Building2, Mail, Calculator, FileText, BarChart3, AlertTriangle, CheckCircle, Search, MapPin, Clock } from 'lucide-react';
 import MarketVisualizationDashboard from '@/components/charts/market-visualization-dashboard';
+import MarkdownRenderer from '@/components/ui/markdown-renderer';
 
 interface Agent {
   id: string;
@@ -365,32 +366,72 @@ export default function AgentsPage() {
     setShowResult(false);
 
     try {
-      // Mock API call for task execution
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const mockResult = {
-        success: true,
-        result: {
-          message: `Task "${finalTask}" has been completed by the ${selectedTask.agent} agent. A detailed report has been generated and sent to your email.`,
-          confidence: 0.95,
-          actions: [
-            { type: 'report_generated' },
-            { type: 'emails_sent', data: { totalSent: 12 } }
-          ],
-          nextSteps: [
-            'Review the generated report for key insights.',
-            'Follow up with high-priority clients identified in the report.',
-            'Schedule a meeting with the project team to discuss next steps.'
-          ]
-        }
+      // Call our API route instead of using agents directly
+      const response = await fetch('/api/agents/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentType: selectedTask.agent,
+          task: finalTask,
+          context: {
+            sessionId: `session-${Date.now()}`,
+            conversationHistory: [],
+            userProfile: {
+              taskInputs: taskInputs
+            },
+            projectContext: {
+              selectedTask: selectedTask,
+              finalTask: finalTask
+            }
+          }
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Agent execution failed');
+      }
+
+      // The API returns the agent response directly
+      const agentResponse = data.result;
+      
+      // Transform agent response to match our UI format
+      const transformedResult = {
+        message: agentResponse.message,
+        confidence: agentResponse.confidence,
+        actions: agentResponse.actions || [],
+        nextSteps: agentResponse.nextSteps || [],
+        toolsUsed: agentResponse.toolsUsed || [],
+        agentData: agentResponse.data,
+        visualizations: agentResponse.visualizations || [],
+        needsHumanIntervention: agentResponse.needsHumanIntervention || false
       };
-      setTaskResult(mockResult.result);
+
+      setTaskResult(transformedResult);
       setShowResult(true);
       fetchTasks();
       setSelectedTask(null);
       setTaskInputs({});
     } catch (error) {
-      console.error('Failed to execute task:', error);
-      alert('Failed to execute task');
+      console.error('Failed to execute task with real agent:', error);
+      
+      // Fallback to mock result if agent fails
+      const fallbackResult = {
+        message: `Task execution encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or contact support.`,
+        confidence: 0.3,
+        actions: [{ type: 'error_occurred', data: { error: error instanceof Error ? error.message : 'Unknown error' } }],
+        nextSteps: ['Check task parameters and try again', 'Contact technical support if the issue persists'],
+        toolsUsed: [],
+        agentData: null,
+        visualizations: [],
+        needsHumanIntervention: true
+      };
+      
+      setTaskResult(fallbackResult);
+      setShowResult(true);
     } finally {
       setIsExecuting(false);
     }
@@ -663,37 +704,173 @@ export default function AgentsPage() {
                     <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-3">
                         <CheckCircle className="h-5 w-5 text-green-500" />
-                        <h4 className="font-semibold text-white">Task Completed Successfully</h4>
-                        <Badge className="ml-auto bg-slate-700 text-slate-300 border-slate-600">
+                        <h4 className="font-semibold text-white">
+                          {taskResult.needsHumanIntervention ? 'Task Needs Attention' : 'Task Completed Successfully'}
+                        </h4>
+                        <Badge className={`ml-auto ${taskResult.needsHumanIntervention ? 'bg-yellow-700 text-yellow-300 border-yellow-600' : 'bg-slate-700 text-slate-300 border-slate-600'}`}>
                           {Math.round(taskResult.confidence * 100)}% Confidence
                         </Badge>
                       </div>
 
-                      <div className="prose prose-sm max-w-none">
-                        <div className="whitespace-pre-wrap text-sm text-slate-300 bg-slate-900 p-3 rounded border border-slate-700">
-                          {taskResult.message}
+                      <div className="prose prose-sm max-w-none prose-invert">
+                        <div className="text-sm text-slate-300 bg-slate-900 p-4 rounded border border-slate-700 markdown-content">
+                          <MarkdownRenderer content={taskResult.message} />
                         </div>
                       </div>
 
+                      {/* Display agent-specific content */}
                       {taskResult.actions && taskResult.actions.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                          {taskResult.actions.map((action: any, index: number) => (
+                            <div key={index}>
+                              {action.type === 'demand_letter_generated' && action.data && (
+                                <div className="bg-slate-900 border border-slate-600 rounded-lg p-4">
+                                  <h5 className="font-semibold text-white mb-2 flex items-center">
+                                    <Mail className="h-4 w-4 mr-2 text-purple-400" />
+                                    Generated Demand Letter
+                                  </h5>
+                                  <div className="space-y-3">
+                                    <div>
+                                      <Label className="text-sm text-slate-400">Subject:</Label>
+                                      <div className="text-white font-medium">{action.data.subject}</div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm text-slate-400">Recipients ({action.data.recipients?.length || 0}):</Label>
+                                      <div className="text-slate-300 text-sm">
+                                        {action.data.recipients?.slice(0, 3).join(', ')}
+                                        {action.data.recipients?.length > 3 && ` and ${action.data.recipients.length - 3} more...`}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm text-slate-400">Email Content:</Label>
+                                      <ScrollArea className="h-48 w-full border border-slate-600 rounded mt-1">
+                                        <div className="p-3">
+                                          <MarkdownRenderer content={action.data.content} compact={true} />
+                                        </div>
+                                      </ScrollArea>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {action.type === 'emails_sent' && action.data && (
+                                <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                                  <h5 className="font-semibold text-green-400 mb-2 flex items-center">
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Email Campaign Results
+                                  </h5>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-slate-400">Successfully Sent:</span>
+                                      <span className="text-green-400 font-medium ml-2">{action.data.totalSent || 0}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-400">Failed:</span>
+                                      <span className="text-red-400 font-medium ml-2">{action.data.totalFailed || 0}</span>
+                                    </div>
+                                  </div>
+                                  {action.data.results && action.data.results.length > 0 && (
+                                    <div className="mt-3">
+                                      <Label className="text-sm text-slate-400">Sample Results:</Label>
+                                      <div className="mt-1 text-xs space-y-1">
+                                        {action.data.results.slice(0, 3).map((result: any, idx: number) => (
+                                          <div key={idx} className="flex justify-between">
+                                            <span className="text-slate-300">{result.email}</span>
+                                            <Badge className={`text-xs ${result.status === 'sent' ? 'bg-green-700 text-green-300' : 'bg-red-700 text-red-300'}`}>
+                                              {result.status}
+                                            </Badge>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {action.type === 'financial_analysis_completed' && action.data && (
+                                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                                  <h5 className="font-semibold text-blue-400 mb-2 flex items-center">
+                                    <Calculator className="h-4 w-4 mr-2" />
+                                    Financial Analysis Results
+                                  </h5>
+                                  {action.data.mortgageOptions && (
+                                    <div className="space-y-2">
+                                      <Label className="text-sm text-slate-400">Best Mortgage Options:</Label>
+                                      {action.data.mortgageOptions.slice(0, 2).map((option: any, idx: number) => (
+                                        <div key={idx} className="bg-slate-800 p-3 rounded border border-slate-600">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-white font-medium">{option.lenderName}</span>
+                                            <Badge className="bg-blue-700 text-blue-300">{option.rate}% APR</Badge>
+                                          </div>
+                                          <div className="text-sm text-slate-400 mt-1">
+                                            Monthly Payment: ${option.monthlyPayment?.toLocaleString()} | {option.loanType}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {action.type === 'project_analytics' && action.data && (
+                                <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-4">
+                                  <h5 className="font-semibold text-purple-400 mb-2 flex items-center">
+                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    Project Analytics Report
+                                  </h5>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-slate-400">Total Units:</span>
+                                      <span className="text-white font-medium ml-2">{action.data.totalUnits || 'N/A'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-400">Units Sold:</span>
+                                      <span className="text-green-400 font-medium ml-2">{action.data.unitsSold || 'N/A'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-400">Revenue:</span>
+                                      <span className="text-white font-medium ml-2">${action.data.totalRevenue?.toLocaleString() || 'N/A'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-400">Completion:</span>
+                                      <span className="text-blue-400 font-medium ml-2">{action.data.completionPercentage || 'N/A'}%</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Generic action display for other action types */}
+                              {!['demand_letter_generated', 'emails_sent', 'financial_analysis_completed', 'project_analytics'].includes(action.type) && (
+                                <div className="flex items-center space-x-2 text-sm text-slate-400">
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <span>{action.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                                  {action.data && action.data.totalSent && (
+                                    <Badge className="ml-auto bg-slate-700 text-slate-300 border-slate-600">
+                                      {action.data.totalSent} items processed
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Display tools used */}
+                      {taskResult.toolsUsed && taskResult.toolsUsed.length > 0 && (
                         <div className="mt-4">
-                          <h5 className="font-semibold text-white mb-2">Actions Completed:</h5>
-                          <div className="space-y-2">
-                            {taskResult.actions.map((action: any, index: number) => (
-                              <div key={index} className="flex items-center space-x-2 text-sm text-slate-400">
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                <span>{action.type}</span>
-                                {action.type === 'emails_sent' && action.data && (
-                                  <Badge className="ml-auto bg-slate-700 text-slate-300 border-slate-600">
-                                    {action.data.totalSent} emails sent
-                                  </Badge>
-                                )}
-                              </div>
+                          <h5 className="font-semibold text-white mb-2">Tools Used:</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {taskResult.toolsUsed.map((tool: string, index: number) => (
+                              <Badge key={index} className="bg-slate-700 text-slate-300 border-slate-600">
+                                {tool.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </Badge>
                             ))}
                           </div>
                         </div>
                       )}
 
+                      {/* Display next steps */}
                       {taskResult.nextSteps && taskResult.nextSteps.length > 0 && (
                         <div className="mt-4">
                           <h5 className="font-semibold text-white mb-2">Recommended Next Steps:</h5>
@@ -703,6 +880,17 @@ export default function AgentsPage() {
                             ))}
                           </ul>
                         </div>
+                      )}
+
+                      {/* Human intervention notice */}
+                      {taskResult.needsHumanIntervention && (
+                        <Alert className="mt-4 bg-yellow-900/20 border-yellow-700">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle className="text-yellow-400">Human Intervention Required</AlertTitle>
+                          <AlertDescription className="text-yellow-300">
+                            This task requires human review or additional input to complete successfully.
+                          </AlertDescription>
+                        </Alert>
                       )}
                     </div>
                   )}

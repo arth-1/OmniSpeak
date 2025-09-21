@@ -44,6 +44,27 @@ async function callGemini(prompt: string): Promise<string> {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
+// ✅ Chat completion function for agents (OpenAI-style message format)
+export async function chatCompletion(messages: Array<{role: string, content: string}>): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY not configured");
+  }
+
+  // Convert OpenAI-style messages to a single prompt for Gemini
+  const prompt = messages.map(msg => {
+    if (msg.role === 'system') {
+      return `System: ${msg.content}`;
+    } else if (msg.role === 'user') {
+      return `User: ${msg.content}`;
+    } else if (msg.role === 'assistant') {
+      return `Assistant: ${msg.content}`;
+    }
+    return msg.content;
+  }).join('\n\n');
+
+  return await callGemini(prompt);
+}
+
 // ✅ REAL Speech-to-Text with Google Cloud Speech-to-Text API
 export async function speechToText(audioData: Blob): Promise<{ text: string }> {
   try {
