@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { agentCoordinator } from '../../../../lib/agents/agentCoordinator';
 
-interface RouteParams {
+interface RouteContext {
   params: {
     id: string;
   };
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const agent = agentCoordinator.getAgent(id);
     
     if (!agent) {
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
     const { action } = body;
 
