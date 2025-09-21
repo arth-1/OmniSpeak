@@ -23,7 +23,7 @@ export default function Home() {
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/sign-in">
+              <Link href="/dashboard">
                 <Button 
                   variant="outline" 
                   className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 backdrop-blur-sm rounded-xl transition-all duration-300"
@@ -31,7 +31,7 @@ export default function Home() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/sign-up">
+              <Link href="/dashboard">
                 <Button className="bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 text-white rounded-xl px-6 shadow-lg hover:shadow-xl transition-all duration-300">
                   Get Started
                 </Button>
@@ -77,7 +77,7 @@ export default function Home() {
                       Open Dashboard
                     </Button>
                   </Link>
-                  <Link href="/sign-up">
+                  <Link href="/dashboard">
                     <Button 
                       variant="outline" 
                       size="lg" 
@@ -141,7 +141,7 @@ export default function Home() {
             <p className="text-xl text-slate-300 mb-10 leading-relaxed">
               Join professionals who are automating workflows, improving client relationships, and closing more deals with AI.
             </p>
-            <Link href="/sign-up">
+            <Link href="/dashboard">
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 text-white rounded-xl px-12 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
