@@ -498,13 +498,13 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-8 p-6 bg-slate-950 text-white min-h-screen font-sans">
-      <header className="flex items-center justify-between">
+      {/* <header className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-white">AI Agent Management</h1>
         <Button onClick={setupDemandLetterWorkflow} className="bg-gradient-to-r from-teal-500 to-sky-500 hover:from-teal-600 hover:to-sky-600">
           <Settings className="mr-2 h-4 w-4" />
           Setup Auto Workflows
         </Button>
-      </header>
+      </header> */}
 
       <Tabs defaultValue="agents" className="space-y-6">
         <TabsList className="bg-slate-900 border-slate-800 grid w-full md:w-fit grid-cols-3">

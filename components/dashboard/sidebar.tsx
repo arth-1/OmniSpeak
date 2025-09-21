@@ -104,13 +104,13 @@ export function Sidebar({ className }: SidebarProps) {
             >
               Voice Processing
             </NavItem>
-            <NavItem
+            {/* <NavItem
               href="/dashboard/translate"
               icon={<Globe className="mr-2 h-4 w-4" />}
               isActive={pathname.startsWith("/dashboard/translate")}
             >
               Translation
-            </NavItem>
+            </NavItem> */}
           </div>
         </div>
         <div className="px-3">
@@ -125,17 +125,17 @@ export function Sidebar({ className }: SidebarProps) {
             >
               Tickets
             </NavItem>
-            <NavItem
+            {/* <NavItem
               href="/dashboard/settings"
               icon={<Settings className="mr-2 h-4 w-4" />}
               isActive={pathname.startsWith("/dashboard/settings")}
             >
               Settings
-            </NavItem>
+            </NavItem> */}
           </div>
         </div>
       </div>
-      <div className="px-3 absolute bottom-4 w-full pr-8">
+      <div className="px-3 absolute bottom-4 w-40 pr-8">
         <Button variant="outline" className="w-full justify-start">
           <LogOut className="mr-2 h-4 w-4" />
           Log out
